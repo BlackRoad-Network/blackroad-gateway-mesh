@@ -1,0 +1,71 @@
+{
+  "schema": "road-messaging-provider-policy-v1",
+  "defaults": {
+    "canonicalAuthority": "LOCAL_ROAD_THREAD",
+    "projectionMode": "REFERENCE_ONLY",
+    "bidirectionalMirror": false,
+    "requireUserApprovalFor": [
+      "POST",
+      "REPLY",
+      "EDIT",
+      "DELETE",
+      "REACTION",
+      "MENTION",
+      "BROADCAST"
+    ],
+    "requireReadAfterWriteVerification": true,
+    "timeoutState": "TIMEOUT_UNKNOWN",
+    "contentReplication": "EXPLICIT_ONLY",
+    "secretTransit": "PROHIBITED"
+  },
+  "profiles": {
+    "slack": {
+      "defaultProjectionMode": "NOTIFY_ONLY",
+      "externalVisibility": true
+    },
+    "github": {
+      "defaultProjectionMode": "REFERENCE_ONLY",
+      "externalVisibility": true
+    },
+    "linear": {
+      "defaultProjectionMode": "REFERENCE_ONLY",
+      "externalVisibility": true
+    },
+    "asana": {
+      "defaultProjectionMode": "REFERENCE_ONLY",
+      "externalVisibility": true
+    },
+    "notion": {
+      "defaultProjectionMode": "REFERENCE_ONLY",
+      "externalVisibility": true
+    },
+    "airtable": {
+      "defaultProjectionMode": "REFERENCE_ONLY",
+      "externalVisibility": true
+    },
+    "microsoft-teams": {
+      "defaultProjectionMode": "NOTIFY_ONLY",
+      "externalVisibility": true
+    },
+    "discord": {
+      "defaultProjectionMode": "NOTIFY_ONLY",
+      "externalVisibility": true
+    },
+    "google-chat": {
+      "defaultProjectionMode": "NOTIFY_ONLY",
+      "externalVisibility": true
+    },
+    "telegram": {
+      "defaultProjectionMode": "NOTIFY_ONLY",
+      "externalVisibility": true
+    },
+    "whatsapp": {
+      "defaultProjectionMode": "NOTIFY_ONLY",
+      "externalVisibility": true
+    },
+    "zoom-team-chat": {
+      "defaultProjectionMode": "NOTIFY_ONLY",
+      "externalVisibility": true
+    }
+  }
+}
