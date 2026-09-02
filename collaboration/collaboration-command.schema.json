@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration-command/v2",
+  "title": "BlackRoad Collaboration Command",
+  "type": "object",
+  "required": ["type", "agentId"],
+  "properties": {
+    "type": { "type": "string", "minLength": 1 },
+    "agentId": { "type": "string", "pattern": "^(connector-orchestrator|agent-instance-[1-6])$" },
+    "sessionRef": { "type": ["string", "null"] },
+    "connectorId": { "type": ["string", "null"] },
+    "intentId": { "type": ["string", "null"] },
+    "workflowId": { "type": ["string", "null"] },
+    "invocationId": { "type": ["string", "null"] },
+    "claimId": { "type": ["string", "null"] },
+    "resourceKey": { "type": ["string", "null"] },
+    "actionClass": { "type": ["string", "null"] },
+    "idempotencyKey": { "type": ["string", "null"] },
+    "requestHash": { "type": ["string", "null"] },
+    "expectedResourceVersionRef": { "type": ["string", "null"] },
+    "observedResourceVersionRef": { "type": ["string", "null"] },
+    "nonce": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}
