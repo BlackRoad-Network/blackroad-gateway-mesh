@@ -5,21 +5,48 @@
   "type": "object",
   "required": ["type", "agentId"],
   "properties": {
-    "type": { "type": "string", "minLength": 1 },
-    "agentId": { "type": "string", "pattern": "^(connector-orchestrator|agent-instance-[1-6])$" },
-    "sessionRef": { "type": ["string", "null"] },
-    "connectorId": { "type": ["string", "null"] },
-    "intentId": { "type": ["string", "null"] },
-    "workflowId": { "type": ["string", "null"] },
-    "invocationId": { "type": ["string", "null"] },
-    "claimId": { "type": ["string", "null"] },
-    "resourceKey": { "type": ["string", "null"] },
-    "actionClass": { "type": ["string", "null"] },
-    "idempotencyKey": { "type": ["string", "null"] },
-    "requestHash": { "type": ["string", "null"] },
-    "expectedResourceVersionRef": { "type": ["string", "null"] },
-    "observedResourceVersionRef": { "type": ["string", "null"] },
-    "nonce": { "type": ["string", "null"] }
+    "type": {"type":"string","minLength":1},
+    "agentId": {"type":"string","pattern":"^(connector-orchestrator|agent-instance-[1-6])$"},
+    "sessionRef": {"type":["string","null"],"minLength":1,"maxLength":200},
+    "connectorId": {"type":["string","null"]},
+    "intentId": {"type":["string","null"]},
+    "workflowId": {"type":["string","null"]},
+    "invocationId": {"type":["string","null"]},
+    "claimId": {"type":["string","null"]},
+    "resourceKey": {"type":["string","null"]},
+    "actionClass": {"type":["string","null"]},
+    "idempotencyKey": {"type":["string","null"]},
+    "requestHash": {"type":["string","null"],"minLength":8,"maxLength":256},
+    "expectedResourceVersionRef": {"type":["string","null"]},
+    "observedResourceVersionRef": {"type":["string","null"]},
+    "nonce": {"type":["string","null"]},
+    "targetOwnerAgent": {"type":["string","null"],"pattern":"^(connector-orchestrator|agent-instance-[1-6])$"},
+    "decisionReceiptRef": {"type":["string","null"],"maxLength":512},
+    "userApprovalRef": {"type":["string","null"],"maxLength":512},
+    "delegationContractRef": {"type":["string","null"],"maxLength":512},
+    "integrationOwnerAgent": {"type":["string","null"],"pattern":"^(connector-orchestrator|agent-instance-[1-6])$"}
   },
-  "additionalProperties": true
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "if": {"properties":{"type":{"const":"intent.create"},"actionClass":{"enum":["WRITE","COMMUNICATE","DEPLOY","ADMIN","SECRET","PUBLIC_EXPOSE"]}},"required":["type","actionClass"]},
+      "then": {"required":["sessionRef","connectorId","resourceKey","targetOwnerAgent","idempotencyKey"]}
+    },
+    {
+      "if": {"properties":{"type":{"const":"claim.acquire"},"actionClass":{"enum":["WRITE","COMMUNICATE","DEPLOY","ADMIN","SECRET","PUBLIC_EXPOSE"]}},"required":["type","actionClass"]},
+      "then": {"required":["sessionRef","connectorId","resourceKey","intentId"]}
+    },
+    {
+      "if": {"properties":{"type":{"const":"invocation.start"}},"required":["type"]},
+      "then": {"required":["sessionRef","intentId","requestHash"]}
+    },
+    {
+      "if": {"properties":{"type":{"enum":["intent.executing","invocation.finish","verification.record","receipt.record","claim.renew","claim.release"]}},"required":["type"]},
+      "then": {"required":["sessionRef"]}
+    },
+    {
+      "if": {"properties":{"actionClass":{"enum":["WRITE","COMMUNICATE","DEPLOY","ADMIN","SECRET","PUBLIC_EXPOSE"]}},"required":["actionClass"]},
+      "then": {"required":["sessionRef"],"properties":{"sessionRef":{"type":"string","minLength":1}}}
+    }
+  ]
 }
