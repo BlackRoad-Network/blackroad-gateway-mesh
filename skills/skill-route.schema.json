@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/skill-route/v1",
+  "title": "BlackRoad Skill Route",
+  "type": "object",
+  "required": [
+    "id",
+    "provider",
+    "category",
+    "primarySkill",
+    "triggers",
+    "mutates",
+    "authority"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "provider": {
+      "type": "string",
+      "minLength": 1
+    },
+    "category": {
+      "type": "string",
+      "minLength": 1
+    },
+    "primarySkill": {
+      "type": "string",
+      "pattern": "^skills://plugins/.+/skill\\.md$"
+    },
+    "supportingSkills": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^skills://plugins/.+/skill\\.md$"
+      },
+      "uniqueItems": true
+    },
+    "triggers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 2
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "negativeTriggers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "mutates": {
+      "enum": [
+        "none",
+        "workspace",
+        "conditional"
+      ]
+    },
+    "authority": {
+      "type": "string",
+      "minLength": 1
+    },
+    "locality": {
+      "enum": [
+        "local",
+        "provider",
+        "hybrid"
+      ]
+    }
+  },
+  "additionalProperties": false
+}
