@@ -1,5 +1,21 @@
 {
   "schema": "road-collaboration-connector-rules-v2",
+  "defaultRule": {
+    "steward": "agent-instance-4",
+    "readers": ["*"],
+    "operators": ["connector-orchestrator", "agent-instance-4"],
+    "governedClasses": ["WRITE","COMMUNICATE","DEPLOY","ADMIN","SECRET","PUBLIC_EXPOSE"],
+    "userApprovalClasses": ["WRITE","COMMUNICATE","DEPLOY","ADMIN","SECRET","PUBLIC_EXPOSE"],
+    "participantRules": {
+      "WRITE": ["agent-instance-4"],
+      "COMMUNICATE": ["agent-instance-4"],
+      "DEPLOY": ["agent-instance-4"],
+      "ADMIN": ["agent-instance-4"],
+      "SECRET": ["agent-instance-4"],
+      "PUBLIC_EXPOSE": ["agent-instance-4"]
+    },
+    "fallbackPolicy": true
+  },
   "rules": [
     {"id":"github","steward":"agent-instance-4","readers":["*"],"operators":["connector-orchestrator","agent-instance-1","agent-instance-2","agent-instance-3","agent-instance-4","agent-instance-5","agent-instance-6"],"governedClasses":["ADMIN","PUBLIC_EXPOSE"],"userApprovalClasses":["ADMIN","PUBLIC_EXPOSE"],"participantRules":{"ADMIN":["agent-instance-2","agent-instance-4"]}},
     {"id":"netlify","steward":"agent-instance-4","readers":["*"],"operators":["connector-orchestrator","agent-instance-3","agent-instance-4"],"governedClasses":["DEPLOY","ADMIN","PUBLIC_EXPOSE"],"userApprovalClasses":["PUBLIC_EXPOSE"],"participantRules":{"DEPLOY":["agent-instance-4"],"ADMIN":["agent-instance-3","agent-instance-4"],"PUBLIC_EXPOSE":["agent-instance-3","agent-instance-4"]}},
