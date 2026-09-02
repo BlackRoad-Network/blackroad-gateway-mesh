@@ -1,0 +1,57 @@
+{
+  "schema": "road-messaging-policy-v1",
+  "defaultProvider": "internal",
+  "canonicalStore": "local-first-append-only",
+  "actionClasses": {
+    "thread.read": "READ",
+    "message.read": "READ",
+    "message.draft": "WRITE",
+    "message.post.internal": "WRITE",
+    "message.post.external": "COMMUNICATE",
+    "message.reply.external": "COMMUNICATE",
+    "message.edit.external": "COMMUNICATE",
+    "message.delete.external": "COMMUNICATE",
+    "reaction.add.external": "COMMUNICATE",
+    "thread.resolve.external": "COMMUNICATE",
+    "bridge.enable": "ADMIN",
+    "bridge.fanout": "COMMUNICATE"
+  },
+  "gates": {
+    "externalCommunication": [
+      "live-session",
+      "target-owner",
+      "semantic-idempotency-key",
+      "exclusive-resource-claim",
+      "explicit-user-approval-reference",
+      "provider-native-authentication",
+      "read-after-write-verification"
+    ],
+    "publicSpace": [
+      "governance-decision-reference",
+      "explicit-user-approval-reference"
+    ],
+    "crossProviderBridge": [
+      "bridge-policy",
+      "origin-message-id",
+      "dedupe-key",
+      "hop-limit",
+      "loop-detection"
+    ]
+  },
+  "limits": {
+    "maxBridgeHops": 4,
+    "maxBodyCharacters": 50000,
+    "maxMentions": 50,
+    "maxAttachments": 25,
+    "maxFanoutProviders": 5
+  },
+  "prohibited": [
+    "secret-values-in-message-metadata",
+    "implicit-channel-wide-mentions",
+    "provider-user-id-as-canonical-principal",
+    "silent-cross-provider-copy",
+    "provider-success-without-verification-as-delivered",
+    "retry-timeout-with-changed-idempotency-key",
+    "hard-delete-canonical-history"
+  ]
+}
