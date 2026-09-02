@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "blackroad-messaging": {
+      "command": "/bin/bash",
+      "args": [
+        "/Users/alexa/workspace/system/messaging/launch-agent-mcp.sh",
+        "agent-instance-3"
+      ],
+      "env": {
+        "ROAD_WORKSPACE_ROOT": "/Users/alexa/workspace"
+      }
+    }
+  }
+}

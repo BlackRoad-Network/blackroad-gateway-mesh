@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/messaging/mirror/v1",
+  "title": "Road Messaging Mirror Projection",
+  "type": "object",
+  "required": ["authority", "projection", "direction", "dedupeKey", "lineage", "state"],
+  "properties": {
+    "authority": {"type": "object"},
+    "projection": {"type": "object"},
+    "direction": {"const": "OUTBOUND_PROJECTION"},
+    "dedupeKey": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "lineage": {"type": "array", "maxItems": 4, "items": {"type": "string"}},
+    "state": {"enum": ["PROPOSED", "BLOCKED", "READY", "SENT_UNVERIFIED", "VERIFIED", "TIMEOUT_UNKNOWN", "FAILED", "CONFLICT"]},
+    "bidirectional": {"const": false}
+  },
+  "additionalProperties": false
+}

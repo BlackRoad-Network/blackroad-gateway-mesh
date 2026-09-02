@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/messaging/message/v1",
+  "title": "Road Messaging Message Reference",
+  "type": "object",
+  "required": ["id", "threadResource", "providerId", "providerMessageRef", "bodyRef", "bodyHash", "bodyLength"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^road://message/"},
+    "threadResource": {"type": "string", "pattern": "^road\\+message://"},
+    "providerId": {"type": "string"},
+    "providerMessageRef": {"type": "string"},
+    "parentProviderMessageRef": {"type": ["string", "null"]},
+    "authorRef": {"type": ["string", "null"]},
+    "bodyRef": {"type": "string"},
+    "bodyHash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "bodyLength": {"type": "integer", "minimum": 0},
+    "mentions": {"type": "array", "items": {"type": "string"}},
+    "attachmentRefs": {"type": "array", "items": {"type": "string"}},
+    "createdAt": {"type": ["string", "null"]},
+    "updatedAt": {"type": ["string", "null"]},
+    "providerVersionRef": {"type": ["string", "null"]}
+  },
+  "additionalProperties": false
+}

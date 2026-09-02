@@ -1,0 +1,183 @@
+{
+  "schema": "road-messaging-providers-v1",
+  "providers": [
+    {
+      "id": "slack",
+      "label": "Slack",
+      "status": "CONNECTED",
+      "surface": "native-connector",
+      "threadModel": "channel-message-with-thread-ts",
+      "authoritativeKinds": ["team-chat", "incident", "announcement"],
+      "operations": {
+        "readThread": {"tool": "slack_read_thread", "required": ["channel_id", "message_ts"], "write": false},
+        "createThread": {"tool": "slack_send_message", "required": ["channel_id", "message"], "write": true},
+        "reply": {"tool": "slack_send_message", "required": ["channel_id", "thread_ts", "message"], "write": true},
+        "edit": {"tool": "slack_edit_message", "required": ["channel_id", "message_id", "message"], "write": true},
+        "delete": {"tool": "slack_delete_message", "required": ["channel_id", "message_id"], "write": true},
+        "react": {"tool": "slack_add_reaction", "required": ["channel_id", "message_ts", "emoji"], "write": true},
+        "readReactions": {"tool": "slack_get_reactions", "required": ["channel_id", "message_ts"], "write": false}
+      }
+    },
+    {
+      "id": "github",
+      "label": "GitHub Discussions/Issues/PRs",
+      "status": "CONNECTED",
+      "surface": "native-connector",
+      "threadModel": "issue-pr-and-review-thread",
+      "authoritativeKinds": ["source-review", "issue-discussion"],
+      "operations": {
+        "readThread": {"tool": "fetch_pr_comments", "required": ["repo_full_name", "pr_number"], "write": false},
+        "createThread": {"tool": "add_comment_to_issue", "required": ["repo_full_name", "pr_number", "comment"], "write": true},
+        "reply": {"tool": "add_comment_to_issue", "required": ["repo_full_name", "pr_number", "comment"], "write": true},
+        "reviewReply": {"tool": "reply_to_review_comment", "required": ["repo_full_name", "pr_number", "comment_id", "comment"], "write": true},
+        "edit": {"tool": "update_issue_comment", "required": ["repo_full_name", "comment_id", "comment"], "write": true},
+        "react": {"tool": "add_reaction_to_issue_comment", "required": ["repo_full_name", "comment_id", "reaction"], "write": true},
+        "resolve": {"tool": "resolve_review_thread", "required": ["thread_id"], "write": true},
+        "reopen": {"tool": "unresolve_review_thread", "required": ["thread_id"], "write": true}
+      }
+    },
+    {
+      "id": "linear",
+      "label": "Linear",
+      "status": "CONNECTED",
+      "surface": "native-connector",
+      "threadModel": "entity-comment-thread",
+      "authoritativeKinds": ["work-item-discussion", "diff-review"],
+      "operations": {
+        "readThread": {"tool": "list_comments", "required": ["one_parent_id"], "write": false},
+        "createThread": {"tool": "save_comment", "required": ["one_parent_id", "body"], "write": true},
+        "reply": {"tool": "save_comment", "required": ["parentId", "body"], "write": true},
+        "edit": {"tool": "save_comment", "required": ["id", "body"], "write": true},
+        "delete": {"tool": "delete_comment", "required": ["id"], "write": true},
+        "reviewReply": {"tool": "save_diff_comment", "required": ["urlOrId", "parentId", "body"], "write": true},
+        "resolve": {"tool": "resolve_diff_thread", "required": ["threadId"], "write": true},
+        "reopen": {"tool": "resolve_diff_thread", "required": ["threadId", "resolved=false"], "write": true}
+      }
+    },
+    {
+      "id": "asana",
+      "label": "Asana",
+      "status": "CONNECTED",
+      "surface": "native-connector",
+      "threadModel": "task-story-comment",
+      "authoritativeKinds": ["task-discussion"],
+      "operations": {
+        "readThread": {"tool": "get_task", "required": ["task_id", "include_comments=true"], "write": false},
+        "createThread": {"tool": "add_comment", "required": ["task_id", "text_or_html_text"], "write": true}
+      }
+    },
+    {
+      "id": "notion",
+      "label": "Notion",
+      "status": "CONNECTED",
+      "surface": "native-connector",
+      "threadModel": "page-block-discussion",
+      "authoritativeKinds": ["document-discussion"],
+      "operations": {
+        "readThread": {"tool": "notion-get-comments", "required": ["page_id"], "write": false},
+        "createThread": {"tool": "notion-create-comment", "required": ["page_id", "markdown_or_rich_text"], "write": true},
+        "reply": {"tool": "notion-create-comment", "required": ["page_id", "discussion_id", "markdown_or_rich_text"], "write": true}
+      }
+    },
+    {
+      "id": "airtable",
+      "label": "Airtable",
+      "status": "CONNECTED",
+      "surface": "native-connector",
+      "threadModel": "record-comment-thread",
+      "authoritativeKinds": ["record-discussion"],
+      "operations": {
+        "readThread": {"tool": "list_record_comments", "required": ["baseId", "tableId", "recordId"], "write": false},
+        "createThread": {"tool": "create_record_comment", "required": ["baseId", "tableId", "recordId", "text"], "write": true},
+        "reply": {"tool": "create_record_comment", "required": ["baseId", "tableId", "recordId", "parentCommentId", "text"], "write": true}
+      }
+    },
+    {
+      "id": "microsoft-teams",
+      "label": "Microsoft Teams",
+      "status": "ADAPTER_AVAILABLE_CONFIG_REQUIRED",
+      "surface": "vercel-chat-sdk",
+      "adapter": "@chat-adapter/teams",
+      "threadModel": "channel-or-chat-thread",
+      "authoritativeKinds": ["team-chat"],
+      "operations": {
+        "readThread": {"tool": "chat-sdk.thread.fetch", "required": ["thread_id"], "write": false},
+        "createThread": {"tool": "chat-sdk.channel.post", "required": ["channel_id", "content"], "write": true},
+        "reply": {"tool": "chat-sdk.thread.post", "required": ["thread_id", "content"], "write": true},
+        "edit": {"tool": "chat-sdk.message.edit", "required": ["message_id", "content"], "write": true},
+        "delete": {"tool": "chat-sdk.message.delete", "required": ["message_id"], "write": true}
+      }
+    },
+    {
+      "id": "google-chat",
+      "label": "Google Chat",
+      "status": "ADAPTER_AVAILABLE_CONFIG_REQUIRED",
+      "surface": "vercel-chat-sdk",
+      "adapter": "@chat-adapter/gchat",
+      "threadModel": "space-thread",
+      "authoritativeKinds": ["team-chat"],
+      "operations": {
+        "readThread": {"tool": "chat-sdk.thread.fetch", "required": ["thread_id"], "write": false},
+        "createThread": {"tool": "chat-sdk.channel.post", "required": ["channel_id", "content"], "write": true},
+        "reply": {"tool": "chat-sdk.thread.post", "required": ["thread_id", "content"], "write": true}
+      }
+    },
+    {
+      "id": "discord",
+      "label": "Discord",
+      "status": "ADAPTER_AVAILABLE_CONFIG_REQUIRED",
+      "surface": "vercel-chat-sdk",
+      "adapter": "@chat-adapter/discord",
+      "threadModel": "channel-thread",
+      "authoritativeKinds": ["community-chat"],
+      "operations": {
+        "readThread": {"tool": "chat-sdk.thread.fetch", "required": ["thread_id"], "write": false},
+        "createThread": {"tool": "chat-sdk.channel.post", "required": ["channel_id", "content"], "write": true},
+        "reply": {"tool": "chat-sdk.thread.post", "required": ["thread_id", "content"], "write": true},
+        "react": {"tool": "chat-sdk.message.react", "required": ["message_id", "emoji"], "write": true}
+      }
+    },
+    {
+      "id": "telegram",
+      "label": "Telegram",
+      "status": "ADAPTER_AVAILABLE_CONFIG_REQUIRED",
+      "surface": "vercel-chat-sdk",
+      "adapter": "@chat-adapter/telegram",
+      "threadModel": "chat-topic",
+      "authoritativeKinds": ["chat"],
+      "operations": {
+        "readThread": {"tool": "chat-sdk.thread.fetch", "required": ["thread_id"], "write": false},
+        "createThread": {"tool": "chat-sdk.channel.post", "required": ["channel_id", "content"], "write": true},
+        "reply": {"tool": "chat-sdk.thread.post", "required": ["thread_id", "content"], "write": true}
+      }
+    },
+    {
+      "id": "whatsapp",
+      "label": "WhatsApp Business Cloud",
+      "status": "ADAPTER_AVAILABLE_CONFIG_REQUIRED",
+      "surface": "vercel-chat-sdk",
+      "adapter": "@chat-adapter/whatsapp",
+      "threadModel": "business-conversation",
+      "authoritativeKinds": ["customer-message"],
+      "operations": {
+        "readThread": {"tool": "chat-sdk.thread.fetch", "required": ["thread_id"], "write": false},
+        "createThread": {"tool": "chat-sdk.channel.post", "required": ["channel_id", "content"], "write": true},
+        "reply": {"tool": "chat-sdk.thread.post", "required": ["thread_id", "content"], "write": true}
+      }
+    },
+    {
+      "id": "matrix",
+      "label": "Matrix",
+      "status": "COMMUNITY_ADAPTER_CONFIG_REQUIRED",
+      "surface": "vercel-chat-sdk-community",
+      "adapter": "@beeper/chat-adapter-matrix",
+      "threadModel": "room-thread",
+      "authoritativeKinds": ["federated-chat"],
+      "operations": {
+        "readThread": {"tool": "chat-sdk.thread.fetch", "required": ["thread_id"], "write": false},
+        "createThread": {"tool": "chat-sdk.channel.post", "required": ["channel_id", "content"], "write": true},
+        "reply": {"tool": "chat-sdk.thread.post", "required": ["thread_id", "content"], "write": true}
+      }
+    }
+  ]
+}

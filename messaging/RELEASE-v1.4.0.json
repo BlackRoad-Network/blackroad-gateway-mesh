@@ -1,0 +1,60 @@
+{
+  "schema": "blackroad-messaging-release-v1",
+  "releaseVersion": "1.4.0",
+  "protocolVersion": "1.0.0",
+  "service": "road://service/messaging",
+  "privateService": "svc:messaging",
+  "branch": "gateway-messaging-framework-v3",
+  "baseBranch": "gateway-collaboration-v1",
+  "providers": {
+    "reviewed": 12,
+    "connectedNative": 6,
+    "adapterAvailableConfigurationRequired": 6
+  },
+  "mcp": {
+    "providerPlannerTools": 13,
+    "sessionBoundAgentTools": 12,
+    "claudeProfiles": 7,
+    "framing": ["newline-json-rpc", "content-length-json-rpc"]
+  },
+  "ingress": {
+    "defaultBind": "127.0.0.1",
+    "defaultPort": 1731,
+    "publicIngress": false,
+    "signedProviders": ["slack", "github"],
+    "adapterAttestationRequired": ["linear", "asana", "notion", "airtable", "microsoft-teams", "google-chat", "discord", "telegram", "whatsapp", "matrix"]
+  },
+  "durability": {
+    "atomicStateReplacement": true,
+    "exclusiveStateLock": true,
+    "privateStateMode": "0600",
+    "rawWebhookBodiesPersisted": false,
+    "messageBodiesPersisted": false,
+    "providerSecretsPersisted": false,
+    "eventHashChain": true
+  },
+  "collaboration": {
+    "exactRuntimeSessionBinding": true,
+    "exclusiveCommunicateClaims": true,
+    "providerNativeReadAfterWriteVerification": true,
+    "referenceOnlyReceipts": true,
+    "addressedHandoffOutbox": true,
+    "timeoutUnknownRetainsClaim": true
+  },
+  "verification": {
+    "tests": 172,
+    "passed": 172,
+    "failed": 0,
+    "freshClone": "PASSED",
+    "contractCheck": "PASSED",
+    "stagedWorkspaceInstall": "PASSED",
+    "installedRuntimeVerify": "PASSED"
+  },
+  "externalEffects": {
+    "providerMessagesCreatedForTesting": 0,
+    "globalClaudeConfigurationChanged": false,
+    "publicDeploymentPerformed": false,
+    "tailscalePolicyChanged": false,
+    "neuraStopBypassed": false
+  }
+}

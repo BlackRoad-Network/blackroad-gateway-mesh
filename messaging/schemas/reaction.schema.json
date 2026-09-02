@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/messaging/reaction/v1",
+  "title": "Road Messaging Reaction",
+  "type": "object",
+  "required": ["messageRef", "emoji", "actorRef", "meaning", "grantsAuthority"],
+  "properties": {
+    "messageRef": {"type": "string"},
+    "emoji": {"type": "string"},
+    "actorRef": {"type": "string"},
+    "meaning": {"type": "string"},
+    "grantsAuthority": {"const": false},
+    "createdAt": {"type": "string", "format": "date-time"}
+  },
+  "additionalProperties": false
+}
