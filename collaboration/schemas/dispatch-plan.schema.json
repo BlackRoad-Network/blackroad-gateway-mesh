@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration/dispatch-plan/v1",
+  "title": "BlackRoad Connector Dispatch Plan",
+  "type": "object",
+  "required": ["schema", "planId", "planHash", "agentId", "connector", "target", "resourceKey", "operation", "actionFamily", "mutating", "claimRequired", "requiredGates", "blockedBy", "canDispatch"],
+  "properties": {
+    "schema": {"const": "road-connector-dispatch-plan-v1"},
+    "planId": {"type": "string", "pattern": "^dispatch_"},
+    "planHash": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "agentId": {"type": "string", "pattern": "^agent-instance-[1-6]$"},
+    "sessionId": {"type": ["string", "null"]},
+    "connector": {"type": "string", "minLength": 1},
+    "target": {"type": "string", "minLength": 1},
+    "resourceKey": {"type": "string", "minLength": 1},
+    "operation": {"type": "string", "minLength": 1},
+    "actionFamily": {"enum": ["metadata", "ordinary-write", "important-write", "admin", "secret", "public-exposure"]},
+    "mutating": {"type": "boolean"},
+    "claimRequired": {"type": "boolean"},
+    "requiredGates": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "blockedBy": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "canDispatch": {"type": "boolean"},
+    "secretRef": {"type": ["string", "null"]}
+  },
+  "additionalProperties": true
+}
