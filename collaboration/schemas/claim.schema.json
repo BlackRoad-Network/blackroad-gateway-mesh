@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration/claim/v1",
+  "title": "BlackRoad Connector Mutation Claim",
+  "type": "object",
+  "required": ["id", "version", "operationId", "idempotencyKey", "sessionId", "agentId", "connectorId", "targetRef", "resourceKey", "mode", "operation", "state", "acquiredAt", "expiresAt"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^claim_"},
+    "version": {"const": "1.0"},
+    "operationId": {"type": "string"},
+    "idempotencyKey": {"type": "string", "minLength": 1},
+    "correlationId": {"type": "string"},
+    "causationId": {"type": ["string", "null"]},
+    "sessionId": {"type": "string", "pattern": "^session_"},
+    "agentId": {"type": "string", "pattern": "^agent-instance-[1-6]$"},
+    "runtime": {"enum": ["claude", "chatgpt", "codex", "roadie", "human", "other"]},
+    "connectorId": {"type": "string", "minLength": 1},
+    "targetRef": {"type": "string", "minLength": 1},
+    "resourceKey": {"type": "string", "minLength": 3},
+    "mode": {"enum": ["write", "deploy", "admin", "secret", "public-exposure"]},
+    "operation": {"type": "string", "minLength": 1},
+    "expectedVersion": {"type": ["string", "null"]},
+    "evidenceRefs": {"type": "array", "items": {"type": "string"}},
+    "state": {"enum": ["active", "completed", "expired", "cancelled"]},
+    "acquiredAt": {"type": "string", "format": "date-time"},
+    "expiresAt": {"type": "string", "format": "date-time"}
+  },
+  "additionalProperties": true
+}
