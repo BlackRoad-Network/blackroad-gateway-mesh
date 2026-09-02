@@ -1,0 +1,65 @@
+{
+  "schema": "road-connector-workflow-request-v1",
+  "workflowId": "gateway-change-example",
+  "agentId": "agent-instance-4",
+  "correlationId": "corr_gateway_change_example",
+  "steps": [
+    {
+      "id": "source-change",
+      "connector": "github",
+      "target": "repo:BlackRoad-Network/blackroad-gateway-mesh:branch:gateway-collaboration-v1",
+      "operation": "file.update",
+      "mode": "write",
+      "idempotencyKey": "gateway-change-example:source",
+      "expectedVersion": "commit:<resolve-before-execution>",
+      "payloadRef": "road://payload/gateway-change/source"
+    },
+    {
+      "id": "work-graph",
+      "connector": "linear",
+      "target": "team:Blackboxprogramming:issue:<resolve-before-execution>",
+      "operation": "issue.update",
+      "mode": "write",
+      "idempotencyKey": "gateway-change-example:linear",
+      "payloadRef": "road://payload/gateway-change/work-graph",
+      "dependsOn": ["source-change"]
+    },
+    {
+      "id": "registry-projection",
+      "connector": "airtable",
+      "target": "workspace:BlackRoad Inc.:record:<resolve-before-execution>",
+      "operation": "record.upsert",
+      "mode": "write",
+      "idempotencyKey": "gateway-change-example:airtable",
+      "expectedVersion": "revision:<resolve-before-execution>",
+      "payloadRef": "road://payload/gateway-change/registry",
+      "dependsOn": ["source-change", "work-graph"]
+    },
+    {
+      "id": "notification",
+      "connector": "slack",
+      "target": "workspace:BlackRoad Inc.:channel:<resolve-before-execution>",
+      "operation": "message.send",
+      "mode": "write",
+      "idempotencyKey": "gateway-change-example:slack",
+      "payloadRef": "road://payload/gateway-change/notification",
+      "dependsOn": ["registry-projection"]
+    },
+    {
+      "id": "telemetry",
+      "connector": "posthog",
+      "target": "organization:BlackRoad OS:event:road.connector.workflow.completed",
+      "operation": "event.write",
+      "mode": "write",
+      "idempotencyKey": "gateway-change-example:posthog",
+      "payloadRef": "road://payload/gateway-change/telemetry",
+      "dependsOn": ["notification"]
+    }
+  ],
+  "notes": [
+    "Resolve provider object identifiers and expected versions immediately before execution.",
+    "Do not execute any blocked step.",
+    "Do not retry TIMEOUT_UNKNOWN until provider state is inspected.",
+    "Connector success completes one step, not the workflow."
+  ]
+}
