@@ -1,0 +1,71 @@
+{
+  "schema": "road-agent-skill-profiles-v1",
+  "profiles": [
+    {
+      "id": "agent-instance-1",
+      "role": "devices-and-communications",
+      "owns": ["devices", "network", "ssh", "radio", "serial", "hardware"],
+      "allowedSkillRoutes": ["tailscale", "nvidia", "proxyman", "software-work", "software-verification"],
+      "mutationScope": "owned-devices-and-authorized-private-networks",
+      "maximumConcurrentMutations": 1,
+      "requiredGates": ["target-owned", "bounded-network-scope", "host-key-safety", "receipt"],
+      "handoffTo": ["agent-instance-3", "agent-instance-4", "agent-instance-6"],
+      "forbidden": ["public-internet-scan", "silent-host-key-acceptance", "public-deploy"]
+    },
+    {
+      "id": "agent-instance-2",
+      "role": "canon-and-program-os",
+      "owns": ["canon", "program-os", "schemas", "commands", "services", "lifecycles"],
+      "allowedSkillRoutes": ["software-work", "software-verification", "zzzops", "notion", "google-drive", "openai-apps", "mcp-apps"],
+      "mutationScope": "canonical-program-model-and-owned-repositories",
+      "maximumConcurrentMutations": 1,
+      "requiredGates": ["canonical-path-confirmed", "conflict-recorded", "tests", "receipt"],
+      "handoffTo": ["agent-instance-3", "agent-instance-4", "agent-instance-5", "agent-instance-6"],
+      "forbidden": ["silent-canon-replacement", "provider-admin", "network-policy-change"]
+    },
+    {
+      "id": "agent-instance-3",
+      "role": "paths-domains-and-routing",
+      "owns": ["paths", "domains", "dns", "namespaces", "road-uris", "service-resolution"],
+      "allowedSkillRoutes": ["plugin-management", "tailscale", "netlify", "vercel", "railway", "software-work", "software-verification"],
+      "mutationScope": "approved-path-domain-and-routing-records",
+      "maximumConcurrentMutations": 1,
+      "requiredGates": ["identity-location-separated", "dns-target-verified", "neura-for-public-exposure", "receipt"],
+      "handoffTo": ["agent-instance-1", "agent-instance-2", "agent-instance-4", "agent-instance-6"],
+      "forbidden": ["blind-dns-cutover", "funnel-enable-without-approval", "repository-migration-without-map"]
+    },
+    {
+      "id": "agent-instance-4",
+      "role": "integrations-and-connectors",
+      "owns": ["plugins", "connectors", "provider-adapters", "webhooks", "events", "gateway"],
+      "allowedSkillRoutes": ["plugin-management", "netlify", "vercel", "railway", "resend", "workos", "dataverse", "supabase", "posthog", "hugging-face", "base44", "gitbook", "stripe", "openai-apps", "mcp-apps", "software-work", "software-verification"],
+      "mutationScope": "adapter-code-and-explicitly-authorized-provider-writes",
+      "maximumConcurrentMutations": 1,
+      "requiredGates": ["provider-native-auth", "permission-tier", "neura-when-sensitive", "receipt"],
+      "handoffTo": ["agent-instance-2", "agent-instance-3", "agent-instance-5", "agent-instance-6"],
+      "forbidden": ["secret-proxying", "auth-equals-authority", "public-deploy-after-stop"]
+    },
+    {
+      "id": "agent-instance-5",
+      "role": "skills-and-agent-capabilities",
+      "owns": ["skills", "skill-routing", "skill-evals", "procedures", "handoff-contracts"],
+      "allowedSkillRoutes": ["skill-authoring", "plugin-management", "agent-delegation", "software-verification", "zzzops", "openai-apps", "mcp-apps"],
+      "mutationScope": "skill-packages-evals-and-routing-metadata",
+      "maximumConcurrentMutations": 1,
+      "requiredGates": ["trigger-boundaries", "semantic-eval-families", "package-validation", "receipt"],
+      "handoffTo": ["agent-instance-2", "agent-instance-4"],
+      "forbidden": ["placeholder-skill-count-inflation", "full-skill-body-publication", "provider-write"]
+    },
+    {
+      "id": "agent-instance-6",
+      "role": "kernel-and-system-runtime",
+      "owns": ["kernel-boundary", "ipc", "system-daemons", "platform-adapters", "low-level-networking"],
+      "allowedSkillRoutes": ["software-work", "software-verification", "tailscale", "nvidia", "macos-apps", "skill-authoring"],
+      "mutationScope": "owned-runtime-and-platform-adapter-code",
+      "maximumConcurrentMutations": 1,
+      "requiredGates": ["kernel-boundary-justified", "least-privilege", "platform-specific-tests", "receipt"],
+      "handoffTo": ["agent-instance-1", "agent-instance-2", "agent-instance-4", "agent-instance-5"],
+      "forbidden": ["unnecessary-kernel-parser", "everything-as-root", "deprecated-macos-kext-architecture"]
+    }
+  ]
+}
