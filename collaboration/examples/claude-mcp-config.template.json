@@ -1,0 +1,70 @@
+{
+  "mcpServers": {
+    "blackroad-collab-agent-1": {
+      "command": "sh",
+      "args": ["__BLACKROAD_GATEWAY_MESH_ROOT__/bin/road-collab-fabric-mcp"],
+      "env": {
+        "ROAD_AGENT_ID": "agent-instance-1",
+        "ROAD_AGENT_RUNTIME": "claude",
+        "ROAD_AGENT_MODEL": "__CLAUDE_MODEL__",
+        "ROAD_COLLAB_SOCKET": "/Users/alexa/workspace/.road-agents/run/road-collab.sock",
+        "ROAD_COLLAB_STATE": "/Users/alexa/workspace/.road-agents/state/collaboration"
+      }
+    },
+    "blackroad-collab-agent-2": {
+      "command": "sh",
+      "args": ["__BLACKROAD_GATEWAY_MESH_ROOT__/bin/road-collab-fabric-mcp"],
+      "env": {
+        "ROAD_AGENT_ID": "agent-instance-2",
+        "ROAD_AGENT_RUNTIME": "claude",
+        "ROAD_AGENT_MODEL": "__CLAUDE_MODEL__",
+        "ROAD_COLLAB_SOCKET": "/Users/alexa/workspace/.road-agents/run/road-collab.sock",
+        "ROAD_COLLAB_STATE": "/Users/alexa/workspace/.road-agents/state/collaboration"
+      }
+    },
+    "blackroad-collab-agent-3": {
+      "command": "sh",
+      "args": ["__BLACKROAD_GATEWAY_MESH_ROOT__/bin/road-collab-fabric-mcp"],
+      "env": {
+        "ROAD_AGENT_ID": "agent-instance-3",
+        "ROAD_AGENT_RUNTIME": "claude",
+        "ROAD_AGENT_MODEL": "__CLAUDE_MODEL__",
+        "ROAD_COLLAB_SOCKET": "/Users/alexa/workspace/.road-agents/run/road-collab.sock",
+        "ROAD_COLLAB_STATE": "/Users/alexa/workspace/.road-agents/state/collaboration"
+      }
+    },
+    "blackroad-collab-agent-4": {
+      "command": "sh",
+      "args": ["__BLACKROAD_GATEWAY_MESH_ROOT__/bin/road-collab-fabric-mcp"],
+      "env": {
+        "ROAD_AGENT_ID": "agent-instance-4",
+        "ROAD_AGENT_RUNTIME": "claude",
+        "ROAD_AGENT_MODEL": "__CLAUDE_MODEL__",
+        "ROAD_COLLAB_SOCKET": "/Users/alexa/workspace/.road-agents/run/road-collab.sock",
+        "ROAD_COLLAB_STATE": "/Users/alexa/workspace/.road-agents/state/collaboration"
+      }
+    },
+    "blackroad-collab-agent-5": {
+      "command": "sh",
+      "args": ["__BLACKROAD_GATEWAY_MESH_ROOT__/bin/road-collab-fabric-mcp"],
+      "env": {
+        "ROAD_AGENT_ID": "agent-instance-5",
+        "ROAD_AGENT_RUNTIME": "claude",
+        "ROAD_AGENT_MODEL": "__CLAUDE_MODEL__",
+        "ROAD_COLLAB_SOCKET": "/Users/alexa/workspace/.road-agents/run/road-collab.sock",
+        "ROAD_COLLAB_STATE": "/Users/alexa/workspace/.road-agents/state/collaboration"
+      }
+    },
+    "blackroad-collab-agent-6": {
+      "command": "sh",
+      "args": ["__BLACKROAD_GATEWAY_MESH_ROOT__/bin/road-collab-fabric-mcp"],
+      "env": {
+        "ROAD_AGENT_ID": "agent-instance-6",
+        "ROAD_AGENT_RUNTIME": "claude",
+        "ROAD_AGENT_MODEL": "__CLAUDE_MODEL__",
+        "ROAD_COLLAB_SOCKET": "/Users/alexa/workspace/.road-agents/run/road-collab.sock",
+        "ROAD_COLLAB_STATE": "/Users/alexa/workspace/.road-agents/state/collaboration"
+      }
+    }
+  }
+}
