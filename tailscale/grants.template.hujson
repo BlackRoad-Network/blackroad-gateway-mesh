@@ -1,0 +1,11 @@
+{
+  // Merge these grants into the existing tailnet policy after resolving the real operator group/tag.
+  // Do not replace an existing policy file wholesale with this fragment.
+  "grants": [
+    {
+      "src": ["group:blackroad-operators"],
+      "dst": ["svc:blackroad-gateway", "svc:forge", "svc:roadie", "svc:identity", "svc:devices", "svc:integrations", "svc:models", "svc:receipts"],
+      "ip": ["*"]
+    }
+  ]
+}
