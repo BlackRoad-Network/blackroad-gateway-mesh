@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/messaging/thread/v1",
+  "title": "Road Messaging Thread",
+  "type": "object",
+  "required": ["id", "authority", "state", "createdAt"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^road://thread/"},
+    "authority": {
+      "type": "object",
+      "required": ["providerId", "resourceKey"],
+      "properties": {
+        "providerId": {"type": "string"},
+        "resourceKey": {"type": "string", "pattern": "^road\\+message://"}
+      },
+      "additionalProperties": false
+    },
+    "kind": {"enum": ["discussion", "review", "task", "document", "announcement", "incident", "direct-message"]},
+    "state": {"enum": ["OPEN", "RESOLVED", "ARCHIVED"]},
+    "subject": {"type": ["string", "null"]},
+    "participantRefs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "updatedAt": {"type": ["string", "null"]}
+  },
+  "additionalProperties": false
+}
