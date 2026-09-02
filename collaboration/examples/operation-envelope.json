@@ -1,0 +1,43 @@
+{
+  "version": "1.0",
+  "operationId": "op_gateway-collaboration-example",
+  "idempotencyKey": "github:blackroad-gateway-mesh:gateway-collaboration-v1:COLLABORATION.md:v1",
+  "correlationId": "corr_gateway-collaboration-example",
+  "causationId": null,
+  "claimRef": "claim_gateway-collaboration-example",
+  "actor": {
+    "agentId": "agent-instance-4",
+    "sessionId": "session_claude-example",
+    "runtime": "claude",
+    "model": null
+  },
+  "connector": {
+    "id": "github",
+    "operation": "file.create",
+    "authorityClass": "write"
+  },
+  "target": {
+    "kind": "repository-path",
+    "ref": "BlackRoad-Network/blackroad-gateway-mesh@gateway-collaboration-v1:COLLABORATION.md",
+    "expectedVersion": null
+  },
+  "intent": {
+    "summary": "Create the collaboration protocol on an isolated stacked branch.",
+    "requestedBy": "identity:human:alexa",
+    "evidenceRefs": [
+      "github:pull/1",
+      "road://policy/plugins"
+    ]
+  },
+  "preconditions": [
+    "branch-isolated-from-concurrent-claude-work",
+    "target-path-does-not-exist",
+    "public-deployment-not-requested"
+  ],
+  "createdAt": "2026-09-02T00:00:00.000Z",
+  "expiresAt": null,
+  "privacy": {
+    "secretValuesAllowed": false,
+    "payloadMode": "refs-hashes-and-metadata-only"
+  }
+}
