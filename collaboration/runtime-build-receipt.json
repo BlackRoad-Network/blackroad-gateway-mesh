@@ -1,0 +1,29 @@
+{
+  "schema": "road-collaboration-runtime-build-receipt-v1",
+  "version": "1.1.0",
+  "branch": "gateway-collaboration-v1",
+  "runtime": {
+    "transport": "unix-domain-socket-json-rpc",
+    "mcp": "stdio-json-rpc",
+    "providerExecution": "provider-native-outside-collaboration-daemon"
+  },
+  "features": [
+    "dispatch-planning",
+    "workflow-dag-planning",
+    "same-resource-serialization",
+    "cross-agent-handoffs",
+    "exclusive-claim-reservation",
+    "provider-version-fencing",
+    "idempotency",
+    "timeout-reconciliation",
+    "public-safe-redaction",
+    "claude-mcp-surface"
+  ],
+  "safety": {
+    "publicDeploymentPerformed": false,
+    "providerMutationPerformedForTesting": false,
+    "tailscaleMutationPerformed": false,
+    "secretValuesPersisted": false,
+    "neuraStopPreserved": true
+  }
+}
