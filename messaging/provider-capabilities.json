@@ -1,0 +1,339 @@
+{
+  "schema": "road-messaging-provider-capabilities-v1",
+  "generatedAt": "2026-09-02T00:00:00Z",
+  "principles": [
+    "provider-authentication-is-not-message-authority",
+    "one-canonical-thread-may-have-many-provider-bindings",
+    "one-authoritative-plane-per-thread",
+    "projections-are-loop-safe-and-idempotent",
+    "external-communication-requires-user-approval",
+    "provider-success-requires-read-after-write-verification",
+    "timeout-remains-unknown",
+    "secret-values-never-enter-message-metadata"
+  ],
+  "providers": {
+    "slack": {
+      "transport": "connected-tool",
+      "surfaceState": "OBSERVED_AVAILABLE",
+      "discussionClass": "channel-thread",
+      "capabilities": {
+        "discoverConversations": true,
+        "readMessages": true,
+        "readThreads": true,
+        "createConversation": true,
+        "postTopLevel": true,
+        "reply": true,
+        "editOwn": true,
+        "deleteOwn": true,
+        "react": true,
+        "resolve": false,
+        "inlineComment": false,
+        "attachments": true,
+        "richCards": true,
+        "streaming": false,
+        "search": true
+      },
+      "nativeTools": {
+        "readThread": "slack_read_thread",
+        "readChannel": "slack_read_channel",
+        "post": "slack_send_message",
+        "edit": "slack_edit_message",
+        "delete": "slack_delete_message",
+        "react": "slack_add_reaction",
+        "createConversation": "slack_create_conversation",
+        "search": "slack_search_public_and_private"
+      }
+    },
+    "github": {
+      "transport": "connected-tool",
+      "surfaceState": "OBSERVED_AVAILABLE",
+      "discussionClass": "issue-pr-review",
+      "capabilities": {
+        "discoverConversations": true,
+        "readMessages": true,
+        "readThreads": true,
+        "createConversation": false,
+        "postTopLevel": true,
+        "reply": true,
+        "editOwn": true,
+        "deleteOwn": false,
+        "react": true,
+        "resolve": true,
+        "inlineComment": true,
+        "attachments": false,
+        "richCards": false,
+        "streaming": false,
+        "search": true
+      },
+      "nativeTools": {
+        "readThread": "fetch_pr_comments",
+        "readReviewThreads": "list_pull_request_review_threads",
+        "post": "add_comment_to_issue",
+        "replyInline": "reply_to_review_comment",
+        "editTopLevel": "update_issue_comment",
+        "editInline": "update_review_comment",
+        "react": "add_reaction_to_issue_comment",
+        "resolveInline": "resolve_review_thread"
+      }
+    },
+    "linear": {
+      "transport": "connected-tool",
+      "surfaceState": "OBSERVED_AVAILABLE",
+      "discussionClass": "work-item-thread",
+      "capabilities": {
+        "discoverConversations": true,
+        "readMessages": true,
+        "readThreads": true,
+        "createConversation": false,
+        "postTopLevel": true,
+        "reply": true,
+        "editOwn": true,
+        "deleteOwn": true,
+        "react": false,
+        "resolve": true,
+        "inlineComment": true,
+        "attachments": false,
+        "richCards": false,
+        "streaming": false,
+        "search": true
+      },
+      "nativeTools": {
+        "readThread": "list_comments",
+        "postOrEdit": "save_comment",
+        "postOrEditDiff": "save_diff_comment",
+        "delete": "delete_comment",
+        "resolveDiff": "resolve_diff_thread"
+      }
+    },
+    "asana": {
+      "transport": "connected-tool",
+      "surfaceState": "OBSERVED_AVAILABLE",
+      "discussionClass": "task-comment",
+      "capabilities": {
+        "discoverConversations": true,
+        "readMessages": true,
+        "readThreads": false,
+        "createConversation": false,
+        "postTopLevel": true,
+        "reply": false,
+        "editOwn": false,
+        "deleteOwn": false,
+        "react": false,
+        "resolve": false,
+        "inlineComment": false,
+        "attachments": false,
+        "richCards": false,
+        "streaming": false,
+        "search": true
+      },
+      "nativeTools": {
+        "readThread": "get_task",
+        "post": "add_comment"
+      }
+    },
+    "notion": {
+      "transport": "connected-tool",
+      "surfaceState": "OBSERVED_AVAILABLE",
+      "discussionClass": "page-block-discussion",
+      "capabilities": {
+        "discoverConversations": true,
+        "readMessages": true,
+        "readThreads": true,
+        "createConversation": false,
+        "postTopLevel": true,
+        "reply": true,
+        "editOwn": false,
+        "deleteOwn": false,
+        "react": false,
+        "resolve": false,
+        "inlineComment": true,
+        "attachments": false,
+        "richCards": false,
+        "streaming": false,
+        "search": true
+      },
+      "nativeTools": {
+        "readThread": "notion-get-comments",
+        "postOrReply": "notion-create-comment"
+      }
+    },
+    "airtable": {
+      "transport": "connected-tool",
+      "surfaceState": "OBSERVED_AVAILABLE",
+      "discussionClass": "record-comment",
+      "capabilities": {
+        "discoverConversations": true,
+        "readMessages": true,
+        "readThreads": true,
+        "createConversation": false,
+        "postTopLevel": true,
+        "reply": true,
+        "editOwn": false,
+        "deleteOwn": false,
+        "react": false,
+        "resolve": false,
+        "inlineComment": false,
+        "attachments": false,
+        "richCards": false,
+        "streaming": false,
+        "search": false
+      },
+      "nativeTools": {
+        "readThread": "list_record_comments",
+        "postOrReply": "create_record_comment"
+      }
+    },
+    "microsoft-teams": {
+      "transport": "vercel-chat-sdk",
+      "surfaceState": "ADAPTER_AVAILABLE_AUTH_UNCONFIGURED",
+      "discussionClass": "channel-thread",
+      "capabilities": {
+        "discoverConversations": "UNVERIFIED",
+        "readMessages": "UNVERIFIED",
+        "readThreads": true,
+        "createConversation": "UNVERIFIED",
+        "postTopLevel": true,
+        "reply": true,
+        "editOwn": "UNVERIFIED",
+        "deleteOwn": "UNVERIFIED",
+        "react": "UNVERIFIED",
+        "resolve": false,
+        "inlineComment": false,
+        "attachments": "UNVERIFIED",
+        "richCards": true,
+        "streaming": true,
+        "search": "UNVERIFIED"
+      },
+      "chatSdk": {
+        "package": "@chat-adapter/teams",
+        "factory": "createTeamsAdapter"
+      }
+    },
+    "discord": {
+      "transport": "vercel-chat-sdk",
+      "surfaceState": "ADAPTER_AVAILABLE_AUTH_UNCONFIGURED",
+      "discussionClass": "channel-thread",
+      "capabilities": {
+        "discoverConversations": "UNVERIFIED",
+        "readMessages": "UNVERIFIED",
+        "readThreads": true,
+        "createConversation": "UNVERIFIED",
+        "postTopLevel": true,
+        "reply": true,
+        "editOwn": "UNVERIFIED",
+        "deleteOwn": "UNVERIFIED",
+        "react": true,
+        "resolve": false,
+        "inlineComment": false,
+        "attachments": true,
+        "richCards": true,
+        "streaming": true,
+        "search": "UNVERIFIED"
+      },
+      "chatSdk": {
+        "package": "@chat-adapter/discord",
+        "factory": "createDiscordAdapter"
+      }
+    },
+    "google-chat": {
+      "transport": "vercel-chat-sdk",
+      "surfaceState": "ADAPTER_AVAILABLE_AUTH_UNCONFIGURED",
+      "discussionClass": "space-thread",
+      "capabilities": {
+        "discoverConversations": "UNVERIFIED",
+        "readMessages": "UNVERIFIED",
+        "readThreads": true,
+        "createConversation": "UNVERIFIED",
+        "postTopLevel": true,
+        "reply": true,
+        "editOwn": "UNVERIFIED",
+        "deleteOwn": "UNVERIFIED",
+        "react": "UNVERIFIED",
+        "resolve": false,
+        "inlineComment": false,
+        "attachments": "UNVERIFIED",
+        "richCards": true,
+        "streaming": true,
+        "search": "UNVERIFIED"
+      },
+      "chatSdk": {
+        "package": "@chat-adapter/gchat",
+        "factory": "createGoogleChatAdapter"
+      }
+    },
+    "telegram": {
+      "transport": "vercel-chat-sdk",
+      "surfaceState": "ADAPTER_AVAILABLE_AUTH_UNCONFIGURED",
+      "discussionClass": "chat-reply",
+      "capabilities": {
+        "discoverConversations": "UNVERIFIED",
+        "readMessages": "UNVERIFIED",
+        "readThreads": "PARTIAL",
+        "createConversation": false,
+        "postTopLevel": true,
+        "reply": true,
+        "editOwn": "UNVERIFIED",
+        "deleteOwn": "UNVERIFIED",
+        "react": "UNVERIFIED",
+        "resolve": false,
+        "inlineComment": false,
+        "attachments": true,
+        "richCards": false,
+        "streaming": true,
+        "search": "UNVERIFIED"
+      },
+      "chatSdk": {
+        "package": "@chat-adapter/telegram",
+        "factory": "createTelegramAdapter"
+      }
+    },
+    "whatsapp": {
+      "transport": "vercel-chat-sdk",
+      "surfaceState": "ADAPTER_AVAILABLE_AUTH_UNCONFIGURED",
+      "discussionClass": "chat-reply",
+      "capabilities": {
+        "discoverConversations": "UNVERIFIED",
+        "readMessages": "UNVERIFIED",
+        "readThreads": "PARTIAL",
+        "createConversation": false,
+        "postTopLevel": true,
+        "reply": true,
+        "editOwn": false,
+        "deleteOwn": false,
+        "react": "UNVERIFIED",
+        "resolve": false,
+        "inlineComment": false,
+        "attachments": true,
+        "richCards": false,
+        "streaming": false,
+        "search": "UNVERIFIED"
+      },
+      "chatSdk": {
+        "package": "@chat-adapter/whatsapp",
+        "factory": "createWhatsAppAdapter"
+      }
+    },
+    "zoom-team-chat": {
+      "transport": "installed-skill",
+      "surfaceState": "SKILL_AVAILABLE_TOOL_SURFACE_UNVERIFIED",
+      "discussionClass": "channel-thread",
+      "capabilities": {
+        "discoverConversations": "UNVERIFIED",
+        "readMessages": "UNVERIFIED",
+        "readThreads": "UNVERIFIED",
+        "createConversation": "UNVERIFIED",
+        "postTopLevel": "UNVERIFIED",
+        "reply": "UNVERIFIED",
+        "editOwn": "UNVERIFIED",
+        "deleteOwn": "UNVERIFIED",
+        "react": "UNVERIFIED",
+        "resolve": false,
+        "inlineComment": false,
+        "attachments": "UNVERIFIED",
+        "richCards": "UNVERIFIED",
+        "streaming": "UNVERIFIED",
+        "search": "UNVERIFIED"
+      }
+    }
+  }
+}
