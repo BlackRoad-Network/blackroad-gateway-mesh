@@ -36,85 +36,131 @@ Also classify whether the target is shared, whether another agent owns it, wheth
 
 ## Decision Model
 
+Use these rules:
+
 - Reads may overlap unless a provider contract says otherwise.
-- Mutations require a durable intent, explicit target owner, idempotency key, and exclusive claim.
+- Mutations require a durable intent, explicit target owner, idempotency key, exact live runtime session, stable non-secret request hash at invocation time, and exclusive claim.
 - A mutating intent based on a known resource version must carry `expectedResourceVersionRef`; reject the mutation if the shared resource version changed.
-- Logical agent identity and runtime session are separate. Record a heartbeat with a session reference before connector work.
-- A provider tool call is a first-class invocation. Record its request hash before execution and provider request/effect references afterward.
+- The logical agent identity and the runtime session are separate. Record a heartbeat with a session reference before connector work so two Claude sessions are not collapsed into one phantom actor.
+- A provider tool call is a first-class invocation. Record its request hash before execution and its provider request reference or opaque effect reference afterward.
 - A successful mutation is not complete until read-after-write verification records `VERIFIED` with evidence.
-- `TIMEOUT_UNKNOWN` remains unknown until fresh evidence resolves it.
-- Cross-connector operations use a workflow and explicit dependency edges. Compensation is its own intent linked by `compensationForIntentId`.
+- `TIMEOUT_UNKNOWN` remains unknown. Never rewrite it as failed or successful without fresh evidence.
+- Cross-connector operations use a workflow and explicit dependency edges. Compensation is represented as its own intent linked by `compensationForIntentId`, not hidden in prose.
 - If the target belongs to another agent, hand off rather than silently assuming ownership.
+- If a connector has no explicit collaboration rule, default to readable discovery but restrict mutation to the connector orchestrator/agent 4 steward plane; all unknown-connector mutation classes require governance, explicit user approval, and steward participation.
 
 ## Execution Protocol
 
 ### Stage 1: Establish presence
-Record heartbeat with agent ID, runtime, provider, and session reference.
+
+Record a heartbeat containing agent ID, runtime, provider, and session reference. Exit when the session is visible and current.
 
 ### Stage 2: Observe shared state
-Read collaboration summary and target claims/resources. Stop on conflicting exclusive claims.
+
+Read the collaboration summary and the current resource/claim state. If another exclusive claim exists for the target, stop and publish or consume a conflict rather than racing it.
 
 ### Stage 3: Create workflow when needed
-For multi-provider or multi-agent work, create one workflow with durable idempotency and named participants.
+
+For multi-provider or multi-agent work, create one workflow with a durable idempotency key, one integration owner, named participants, and a delegation-contract reference when work is parallelized. Each operation becomes an intent under that workflow.
 
 ### Stage 4: Declare intent
-Include connector, action class, resource key, target owner, summary, expected outcome, idempotency key, dependencies, approval/governance refs, capability refs, and expected resource version where known.
+
+Create the intent with connector, action class, resource key, target owner, summary, expected outcome, idempotency key, dependencies, governance/user-approval references, capability references, and expected resource version when known.
 
 ### Stage 5: Satisfy gates and claim
-Obtain required participant, governance, and user-approval evidence, then acquire the shared or exclusive claim.
+
+Required participants approve from live runtime sessions. Governance and user-approval gates must be present where required. Acquire the shared or exclusive claim only when the intent is ready. An exclusive claim is session-owned; only that session may renew or release it unless the collaboration broker performs an explicit recovery action.
 
 ### Stage 6: Start durable invocation
-Mark intent executing and register `invocation.start` with tool name, session reference, and safe request hash.
+
+Mark the intent executing, then register `invocation.start` with the provider tool name, session reference, and hash of the provider request shape. Never place secret values in collaboration state.
 
 ### Stage 7: Execute provider-native operation
-Use the specialist provider tool directly. Collaboration coordinates but does not proxy credentials.
+
+Use the specialist provider tool directly. The collaboration layer coordinates the action but does not proxy provider credentials.
 
 ### Stage 8: Finish invocation
-Record provider outcome, opaque request ref, safe response hash, and effect refs. Mutating success moves to `VERIFYING`.
+
+Record provider outcome, opaque request reference, response hash if safe, and effect references. A mutating provider success transitions to `VERIFYING`, not directly to success.
 
 ### Stage 9: Verify effects
-Read the affected provider resource back and record verification evidence plus observed stable version where available.
+
+Read the affected provider resource through the provider-native read surface. Record `verification.record` with evidence and the observed stable version reference where the provider exposes one.
 
 ### Stage 10: Receipt and handoff
-Only after required verification may a successful mutation receive a `SUCCEEDED` receipt. Publish any required addressed handoff.
+
+Only after required verification may a successful mutation receive a `SUCCEEDED` receipt. Complete or publish any handoff with artifact/evidence references. Downstream intents then re-evaluate their dependency state.
 
 ## Failure Taxonomy
 
-- `resource-already-claimed`
-- `agent-exclusive-mutation-limit`
-- `resource_version_conflict`
-- `idempotency_key_conflict`
-- `invocation_request_conflict`
-- `TIMEOUT_UNKNOWN`
-- `VERIFICATION_FAILED`
-- `BLOCKED_GOVERNANCE`
-- `BLOCKED_USER_APPROVAL`
-- `handoff_target_denied`
-- `state_contention`
+- `resource-already-claimed`: another agent owns the active mutation lease.
+- `agent-exclusive-mutation-limit`: the same agent already has another active exclusive mutation.
+- `resource_version_conflict`: a stale read attempted to authorize a write.
+- `idempotency_key_conflict`: a key was reused for a different operation.
+- `invocation_request_conflict`: an invocation retry changed its request hash.
+- `TIMEOUT_UNKNOWN`: provider completion could not be determined.
+- `VERIFICATION_FAILED`: the read-back did not prove the intended effect.
+- `BLOCKED_GOVERNANCE`: required Neura or equivalent governance evidence is absent.
+- `BLOCKED_USER_APPROVAL`: an externally consequential action lacks required user authorization evidence.
+- `handoff_target_denied`: an agent attempted to bypass the allowed collaboration graph.
+- `state_contention`: the shared broker state changed too frequently; retry with the same semantic idempotency key and a fresh transport nonce.
 
 ## Invariants
 
-- Agent identity is not model provider.
-- Session identity is not logical agent identity.
+- Agent identity is not the model provider.
+- Session identity is not the logical agent identity.
 - Connector authentication is not action authority.
 - Provider write success is not verified completion.
 - No secret value enters collaboration state, events, receipts, or handoffs.
 - One resource has at most one active exclusive mutation claim.
+- Every mutation intent, claim, claim renewal/release, execution, invocation, verification, and receipt remains bound to the exact live runtime session that owns the intent.
 - One logical agent has at most one active exclusive mutation.
 - Every provider mutation is idempotent and causally attributable.
 - Timeouts remain unknown until evidence resolves them.
 - Cross-connector dependencies are explicit.
 - Provider execution remains provider-native.
-- Public exposure and sensitive administration retain separate governance gates.
+- Public exposure and sensitive administration retain their separate governance gates.
 
 ## Invalid Shortcuts
 
-Reject calling the provider before registering intent/claim/invocation, treating provider success as proof of final state, retrying changed requests under an old idempotency identity, accepting stale versions, collapsing concurrent sessions, flattening timeouts, hiding compensation in prose, putting credentials in collaboration state, or bypassing coordination because an app permission is broad.
+Reject these shortcuts:
+
+- calling the provider first and writing a receipt afterward;
+- treating a connector tool success response as proof the resource now has the intended state;
+- reusing an idempotency key for a modified request;
+- accepting a stale provider version because another agent "probably did not change it";
+- using one agent ID to represent multiple concurrent Claude sessions without session references;
+- declaring a timeout failed just to unblock a dependency;
+- hiding compensation steps in handoff prose;
+- copying provider credentials into collaboration state;
+- bypassing the broker because a provider app currently has an allow-all platform permission.
 
 ## Handoff Contract
 
-Include source/destination agent IDs, workflow/intent refs, resource key, connector ID, proven facts, artifacts, evidence, current resource version when available, unresolved blocker/next action, and active-claim state. The recipient acknowledges before assuming responsibility.
+A handoff must contain:
+
+- source and destination agent IDs;
+- workflow and intent references where applicable;
+- resource key and connector ID;
+- summary of what is already proven;
+- artifact references;
+- evidence references;
+- current resource version reference when available;
+- unresolved blocker or requested next action;
+- whether an active claim remains and when it expires.
+
+The receiving agent acknowledges before assuming responsibility. Completion stores a result reference rather than erasing the original handoff.
 
 ## Completion Criteria
 
-Collaborative connector work is complete only when the correct session is registered, mutations have durable intents and claims, provider invocations have stable request identity, successful mutations have read-after-write proof, receipts preserve the true outcome, downstream dependencies refresh, handoffs are addressed/acknowledged, collaboration validation passes, and no secret-like value entered the ledger.
+Do not call collaborative connector work complete until:
+
+- the correct agent/session is registered and current;
+- all mutating work has a durable intent and exclusive claim;
+- provider invocations are recorded with stable request identity;
+- successful mutations have read-after-write verification evidence;
+- final receipts preserve the true outcome, including uncertainty;
+- downstream dependency states are refreshed;
+- required handoffs are addressed and acknowledged;
+- collaboration-state validation passes;
+- no secret-like value entered the collaboration ledger.
