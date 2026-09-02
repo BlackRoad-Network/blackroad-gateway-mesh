@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE="${ROAD_GATEWAY_URL:-http://127.0.0.1:8888}"
+BASE="${BASE%/}"
+
+usage() {
+  cat <<'EOF'
+usage: road-gateway <command> [args]
+
+commands:
+  show
+  services
+  health
+  capabilities
+  service <id>
+
+Environment:
+  ROAD_GATEWAY_URL   Gateway origin. Defaults to http://127.0.0.1:8888 for local development.
+EOF
+}
+
+get() {
+  local path="$1"
+  local tmp
+  tmp="$(mktemp)"
+  trap 'rm -f "$tmp"' RETURN
+
+  local code
+  code="$(curl -fsS -o "$tmp" -w '%{http_code}' --connect-timeout 3 --max-time 10 "$BASE$path" || true)"
+  if [[ "$code" != "200" ]]; then
+    printf 'gateway request failed: %s%s -> HTTP %s\n' "$BASE" "$path" "${code:-000}" >&2
+    if [[ -s "$tmp" ]]; then cat "$tmp" >&2; fi
+    return 1
+  fi
+
+  if command -v jq >/dev/null 2>&1; then
+    jq . < "$tmp"
+  else
+    cat "$tmp"
+  fi
+}
+
+case "${1:-}" in
+  show)
+    get /gateway
+    ;;
+  services)
+    get /gateway/services
+    ;;
+  health)
+    get /gateway/health
+    ;;
+  capabilities)
+    get /gateway/capabilities
+    ;;
+  service)
+    [[ -n "${2:-}" ]] || { usage >&2; exit 64; }
+    get "/gateway/services/${2}"
+    ;;
+  -h|--help|help|"")
+    usage
+    ;;
+  *)
+    echo "unknown command: $1" >&2
+    usage >&2
+    exit 64
+    ;;
+esac
