@@ -1,0 +1,27 @@
+{
+  "schema": "road-collaboration-mcp-tools-v1",
+  "server": "blackroad-collaboration",
+  "version": "0.10.0",
+  "actorBinding": {
+    "agent": "ROAD_AGENT_ID",
+    "session": "ROAD_SESSION_REF",
+    "rule": "tool arguments cannot override server-bound actor identity"
+  },
+  "transport": {
+    "stdio": ["content-length", "ndjson-test-mode"],
+    "serialized": true
+  },
+  "tools": [
+    "road_collab_session_heartbeat",
+    "road_collab_status",
+    "road_collab_workflow_templates",
+    "road_collab_workflow_instantiate",
+    "road_collab_queue_list",
+    "road_collab_work_item_start",
+    "road_collab_work_item_finish",
+    "road_collab_delegation_create",
+    "road_collab_delegation_resolve",
+    "road_collab_notifications_list",
+    "road_collab_notification_ack"
+  ]
+}
