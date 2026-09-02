@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration/connector-result/v1",
+  "title": "BlackRoad Connector Result Receipt",
+  "type": "object",
+  "required": ["schema", "operationId", "connector", "target", "normalizedStatus", "observedAt", "secretValuesPersisted"],
+  "properties": {
+    "schema": {"const": "road-connector-result-v1"},
+    "operationId": {"type": "string", "minLength": 1},
+    "connector": {"type": "string", "minLength": 1},
+    "target": {"type": "string", "minLength": 1},
+    "normalizedStatus": {"enum": ["STEP_SUCCEEDED", "STEP_FAILED", "TIMEOUT_UNKNOWN", "EMPTY_OBSERVATION", "AUTH_REJECTED_NOT_ABSENT", "CONFLICT", "CANCELLED", "UNKNOWN"]},
+    "providerVersionBefore": {"type": ["string", "null"]},
+    "providerVersionAfter": {"type": ["string", "null"]},
+    "receiptRef": {"type": ["string", "null"]},
+    "observedAt": {"type": "string", "format": "date-time"},
+    "secretValuesPersisted": {"const": false}
+  },
+  "additionalProperties": true
+}
