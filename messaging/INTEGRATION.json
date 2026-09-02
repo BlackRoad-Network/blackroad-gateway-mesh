@@ -1,0 +1,55 @@
+{
+  "schema": "road-messaging-integration-v1",
+  "service": {
+    "id": "messaging",
+    "roadUri": "road://service/messaging",
+    "workspaceRoot": "/Users/alexa/workspace",
+    "defaultStateRoot": ".road-agents/shared/messaging",
+    "publicMetadataOnly": true
+  },
+  "dependsOn": [
+    {
+      "service": "road://service/collaboration",
+      "purpose": "session, claim, governance, workflow and receipt authority"
+    },
+    {
+      "service": "road://service/gateway",
+      "purpose": "connector discovery and provider capability routing"
+    }
+  ],
+  "owns": [
+    "threads",
+    "messages",
+    "provider-bindings",
+    "projections",
+    "reactions",
+    "message-event-normalization"
+  ],
+  "doesNotOwn": [
+    "provider-credentials",
+    "provider-authentication",
+    "DNS",
+    "deployment",
+    "Tailscale-policy",
+    "public-exposure"
+  ],
+  "actionClassByOperation": {
+    "read": "READ",
+    "search": "READ",
+    "post": "COMMUNICATE",
+    "reply": "COMMUNICATE",
+    "edit": "COMMUNICATE",
+    "delete": "COMMUNICATE",
+    "reaction": "COMMUNICATE",
+    "resolve": "WRITE"
+  },
+  "mcp": {
+    "command": [
+      "node",
+      "/Users/alexa/workspace/blackroad-gateway-mesh/messaging/mcp-server.mjs"
+    ],
+    "environment": {
+      "ROAD_MESSAGING_HOME": "/Users/alexa/workspace/.road-agents/shared/messaging"
+    }
+  }
+}
