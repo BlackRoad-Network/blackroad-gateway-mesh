@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/messaging/binding/v1",
+  "title": "BlackRoad Provider Thread Binding",
+  "type": "object",
+  "required": [
+    "id",
+    "threadId",
+    "provider",
+    "connectorId",
+    "providerThreadRef",
+    "providerLocator",
+    "canonicalKey",
+    "mode",
+    "visibility",
+    "state"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^binding_"
+    },
+    "threadId": {
+      "type": "string",
+      "pattern": "^thread_"
+    },
+    "provider": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "connectorId": {
+      "type": "string"
+    },
+    "providerThreadRef": {
+      "type": "string"
+    },
+    "providerLocator": {
+      "type": "object"
+    },
+    "canonicalKey": {
+      "type": "string"
+    },
+    "mode": {
+      "enum": [
+        "AUTHORITATIVE",
+        "PROJECTION",
+        "READ_ONLY"
+      ]
+    },
+    "visibility": {
+      "enum": [
+        "INTERNAL",
+        "EXTERNAL",
+        "PUBLIC"
+      ]
+    },
+    "state": {
+      "enum": [
+        "BOUND",
+        "STALE",
+        "UNBOUND"
+      ]
+    }
+  },
+  "additionalProperties": true
+}
