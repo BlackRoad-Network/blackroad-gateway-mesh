@@ -1,0 +1,19 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"road://schema/collaboration-session/v1",
+  "title":"BlackRoad Collaboration Runtime Session",
+  "type":"object",
+  "required":["id","agentId","sessionRef","runtime","state","lastHeartbeatAt"],
+  "properties":{
+    "id":{"type":"string","minLength":1},
+    "agentId":{"type":"string","pattern":"^(connector-orchestrator|agent-instance-[1-6])$"},
+    "sessionRef":{"type":"string","minLength":1,"maxLength":200},
+    "runtime":{"type":"string","minLength":1},
+    "provider":{"type":["string","null"]},
+    "state":{"enum":["ONLINE","STALE","CLOSED"]},
+    "startedAt":{"type":["string","null"],"format":"date-time"},
+    "lastHeartbeatAt":{"type":"string","format":"date-time"},
+    "closedAt":{"type":["string","null"]}
+  },
+  "additionalProperties":false
+}
