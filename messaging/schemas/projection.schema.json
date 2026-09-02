@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/messaging/projection/v1",
+  "title": "BlackRoad Messaging Projection",
+  "type": "object",
+  "required": [
+    "id",
+    "threadId",
+    "bindingId",
+    "provider",
+    "action",
+    "state",
+    "idempotencyKey",
+    "requestHash",
+    "evidenceRefs",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^projection_"
+    },
+    "messageId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "threadId": {
+      "type": "string",
+      "pattern": "^thread_"
+    },
+    "bindingId": {
+      "type": "string",
+      "pattern": "^binding_"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "action": {
+      "enum": [
+        "POST",
+        "REPLY",
+        "EDIT",
+        "DELETE",
+        "REACTION",
+        "RESOLVE"
+      ]
+    },
+    "state": {
+      "enum": [
+        "PLANNED",
+        "BLOCKED_CAPABILITY",
+        "ACKNOWLEDGED_UNVERIFIED",
+        "VERIFIED",
+        "NOT_APPLIED",
+        "FAILED",
+        "TIMEOUT_UNKNOWN",
+        "CANCELLED"
+      ]
+    },
+    "idempotencyKey": {
+      "type": "string"
+    },
+    "requestHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "evidenceRefs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true
+}
