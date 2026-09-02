@@ -43,7 +43,7 @@
     "linear":{"provider":"linear","class":"developer","profile":"source-control"},
     "hugging-face":{"provider":"huggingface","class":"ai","profile":"ai-model"},
     "openai-platform":{"provider":"openai","class":"ai","profile":"ai-model"},
-    "stripe":{"provider":"stripe","class":"data","profile":"data-system"},
+    "stripe":{"provider":"stripe","class":"data","profile":"financial"},
     "zoom":{"provider":"zoom","class":"communications","profile":"communications"},
     "gmail":{"provider":"google","class":"communications","profile":"communications"},
     "google-calendar":{"provider":"google","class":"productivity","profile":"productivity-docs"},
