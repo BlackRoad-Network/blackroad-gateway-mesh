@@ -1,0 +1,12 @@
+{
+  "name": "@blackroad/messaging-fabric",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "verify": "npm run check && npm test",
+    "mcp": "node mcp-server.mjs"
+  }
+}
