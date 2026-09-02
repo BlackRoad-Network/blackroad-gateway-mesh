@@ -1,0 +1,39 @@
+{
+  "schema": "road-messaging-surface-observations-v1",
+  "observedAt": "2026-09-02T18:34:24Z",
+  "privacy": "public-safe aggregate only",
+  "slack": {
+    "toolSurface": "CONNECTED_READ_WRITE",
+    "workspacesObserved": 1,
+    "relevantCollaborationChannelsObserved": 3,
+    "existingThreadSearch": "EMPTY_OBSERVATION",
+    "messagesSentDuringValidation": 0
+  },
+  "microsoftTeams": {
+    "hostedConnectorSearch": "NO_PLUGIN_RESULT",
+    "chatSdkAdapter": "@chat-adapter/teams",
+    "state": "ADAPTER_AVAILABLE_AUTH_UNCONFIGURED"
+  },
+  "github": {
+    "comments": "OBSERVED_AVAILABLE",
+    "reviewThreads": "OBSERVED_AVAILABLE",
+    "reactions": "OBSERVED_AVAILABLE"
+  },
+  "linear": {
+    "comments": "OBSERVED_AVAILABLE",
+    "threadReplies": "OBSERVED_AVAILABLE",
+    "diffThreads": "OBSERVED_AVAILABLE"
+  },
+  "asana": {
+    "taskComments": "OBSERVED_AVAILABLE",
+    "threadReplies": "NOT_EXPOSED_BY_CURRENT_TOOL_SURFACE"
+  },
+  "notion": {
+    "pageAndBlockDiscussions": "OBSERVED_AVAILABLE",
+    "replies": "OBSERVED_AVAILABLE"
+  },
+  "airtable": {
+    "recordComments": "OBSERVED_AVAILABLE",
+    "threadReplies": "OBSERVED_AVAILABLE"
+  }
+}
