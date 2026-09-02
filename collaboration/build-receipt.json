@@ -1,0 +1,64 @@
+{
+  "schema": "road-collaboration-build-receipt-v1",
+  "builtAt": "2026-09-02T14:48:58.945850Z",
+  "repository": "BlackRoad-Network/blackroad-gateway-mesh",
+  "branch": "gateway-collaboration-v1",
+  "baseBranch": "gateway-registry-v1",
+  "baseCommit": "68f7bccee1ea4af1f5ecdeda468134fd6e91eff7",
+  "protocolVersion": "1.0",
+  "validation": {
+    "node": "v22.16.0",
+    "npm": "10.9.2",
+    "staticCheck": {
+      "passed": true,
+      "agents": 6,
+      "eventTypes": 17,
+      "connectorPlanes": 10,
+      "connectorPolicies": 22,
+      "schemas": 6,
+      "errors": 0
+    },
+    "tests": {
+      "passed": 14,
+      "failed": 0
+    },
+    "endToEnd": {
+      "healthy": true,
+      "sessions": 2,
+      "claims": 1,
+      "activeClaims": 0,
+      "handoffs": 1,
+      "receipts": 1,
+      "events": 7
+    }
+  },
+  "safety": {
+    "publicDeploymentPerformed": false,
+    "tailscaleMutationPerformed": false,
+    "providerDataMutationPerformed": false,
+    "neuraStopHonored": true,
+    "secretValuesPersisted": false
+  },
+  "files": [
+    {"path":"COLLABORATION.md","sha256":"c16e7fe9571e1118fda21db340dd40349ffc1faa511cf1e0d063da6b20d6dbb8","bytes":6167},
+    {"path":"bin/road-collab","sha256":"b88186df69f4f0db7652108753947ffd7211a4d926bdbfa43dddc00d00a6c0e9","bytes":136},
+    {"path":"collaboration/README.md","sha256":"e4973c31c240ab8c9ea7e38fade3a528cbe237edb3f7538c528654293019d67d","bytes":1225},
+    {"path":"collaboration/VALIDATION.md","sha256":"5091996334fb82bbe4256dfe487d7c7dfad651e0bebcbcfce73613bf6cb98660","bytes":2360},
+    {"path":"collaboration/cli.mjs","sha256":"81fe1e86947b1d5a21f07248b3d8fc017aef2b672885fb05a280a352398f4f2e","bytes":9529},
+    {"path":"collaboration/connector-policy.json","sha256":"6f45585ba74125358610816f6e31dccb707978bb92f97a57f69540cba92deb6b","bytes":5841},
+    {"path":"collaboration/connector-topology.json","sha256":"67f3259f84772af104efe0072c4eaa93c365e02619228c6164fe29676ebf6e00","bytes":3854},
+    {"path":"collaboration/core.mjs","sha256":"d461b5914e5795586ed94efce1a786b23ddd612901d0582c0f86b3e495d34618","bytes":25771},
+    {"path":"collaboration/examples/operation-envelope.json","sha256":"7356a8d5509c8be4da3ca463eded334d254201ba6d0fbe32f51f2ca220c0b73c","bytes":1269},
+    {"path":"collaboration/manifest.json","sha256":"6f8f28dbbc6a63d16759db77bdcf2d45397f1166dd6969e7397f4463b6e045da","bytes":3472},
+    {"path":"collaboration/package.json","sha256":"f37ac813099e0ccafcdd8037467b442e9956b896cd03d9822db88052e2576d2d","bytes":261},
+    {"path":"collaboration/schemas/claim.schema.json","sha256":"e63164bf0a01eb192f072c38e8bc8dba8f5a893f5e955bda06f560bc6fda6957","bytes":1527},
+    {"path":"collaboration/schemas/event.schema.json","sha256":"6d421f3f1fead978291e77ac4d495a22a2c9c4b58761e47480e408f3c6ec3522","bytes":937},
+    {"path":"collaboration/schemas/handoff.schema.json","sha256":"2503483e54e68d50a831535337050c4dfbf1af169d874fd247d25c0673aba31c","bytes":1613},
+    {"path":"collaboration/schemas/operation-envelope.schema.json","sha256":"c851af7aa7fe81ce92b21ee0158569775e0d9eda3561f97ecb15a29a5b96ab8d","bytes":2947},
+    {"path":"collaboration/schemas/receipt.schema.json","sha256":"6ab1829a17830078d836c3391f2583f8db9bc25e8ecf3dd2b01b8ecd27ccfffd","bytes":1909},
+    {"path":"collaboration/schemas/session.schema.json","sha256":"4c0b2981dc4fcde587f6048201ebdb64693796fb6aa89da9181dbf44b6046e1d","bytes":1138},
+    {"path":"collaboration/scripts/check.mjs","sha256":"a66a4d462fccba9b22e1ebaf83ca8f74b57cc257cfb5e97ff86fa591e41e8bf4","bytes":4286},
+    {"path":"collaboration/store.mjs","sha256":"f85660b043f90e35692775a9ef6ad79bdac81e5d45b93b8f35c9958a4de2f28a","bytes":3234},
+    {"path":"collaboration/tests/collaboration.test.mjs","sha256":"6c6f37f9f5c92e72cbbab78d1490eeea277992c79cedb2c87ab939899bda15a7","bytes":11491}
+  ]
+}
