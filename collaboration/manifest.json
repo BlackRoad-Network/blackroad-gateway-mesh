@@ -1,0 +1,77 @@
+{
+  "schema": "road-collaboration-manifest-v1",
+  "protocolVersion": "1.0",
+  "service": {
+    "id": "collaboration",
+    "roadUri": "road://service/collaboration",
+    "privateService": "svc:blackroad-collaboration",
+    "workspaceRoot": "/Users/alexa/workspace",
+    "stateRoot": ".road-agents/collaboration",
+    "publicMetadataOnly": true
+  },
+  "actorModel": {
+    "stableIdentity": "road://agent/agent-instance-N",
+    "ephemeralIdentity": "session_<uuid>",
+    "runtimeValues": ["claude", "chatgpt", "codex", "roadie", "human", "other"],
+    "runtimeDoesNotGrantAuthority": true,
+    "modelDoesNotGrantAuthority": true
+  },
+  "agents": [
+    {"id": "agent-instance-1", "roadUri": "road://agent/agent-instance-1", "role": "devices-and-communications", "maximumConcurrentMutations": 1},
+    {"id": "agent-instance-2", "roadUri": "road://agent/agent-instance-2", "role": "canon-and-program-os", "maximumConcurrentMutations": 1},
+    {"id": "agent-instance-3", "roadUri": "road://agent/agent-instance-3", "role": "paths-domains-and-routing", "maximumConcurrentMutations": 1},
+    {"id": "agent-instance-4", "roadUri": "road://agent/agent-instance-4", "role": "integrations-and-connectors", "maximumConcurrentMutations": 1},
+    {"id": "agent-instance-5", "roadUri": "road://agent/agent-instance-5", "role": "skills-and-agent-capabilities", "maximumConcurrentMutations": 1},
+    {"id": "agent-instance-6", "roadUri": "road://agent/agent-instance-6", "role": "kernel-and-system-runtime", "maximumConcurrentMutations": 1}
+  ],
+  "state": {
+    "current": "state.json",
+    "events": "events.jsonl",
+    "receipts": "receipts.jsonl",
+    "lock": ".lock",
+    "writes": "atomic-temp-rename-under-exclusive-lock"
+  },
+  "invariants": [
+    "six-stable-agent-identities",
+    "runtime-is-metadata-not-authority",
+    "reads-may-run-concurrently",
+    "mutations-require-exclusive-resource-claim",
+    "one-active-mutation-per-agent",
+    "mutations-require-idempotency-key",
+    "version-preconditions-when-provider-supports-them",
+    "handoffs-require-recipient-acknowledgement",
+    "receipts-are-append-only",
+    "secret-values-never-enter-collaboration-state",
+    "timeout-is-not-offline",
+    "zero-results-are-not-nonexistence",
+    "authentication-is-not-authorization",
+    "connector-success-is-not-workflow-completion"
+  ],
+  "eventTypes": [
+    "road.collaboration.session.registered",
+    "road.collaboration.session.heartbeat",
+    "road.collaboration.session.expired",
+    "road.collaboration.claim.acquired",
+    "road.collaboration.claim.expired",
+    "road.collaboration.operation.succeeded",
+    "road.collaboration.operation.failed",
+    "road.collaboration.operation.unknown",
+    "road.collaboration.operation.cancelled",
+    "road.collaboration.operation.compensated",
+    "road.collaboration.handoff.offered",
+    "road.collaboration.handoff.accepted",
+    "road.collaboration.handoff.completed",
+    "road.collaboration.handoff.rejected",
+    "road.collaboration.handoff.expired",
+    "road.connector.observation.recorded",
+    "road.connector.reconciliation.required"
+  ],
+  "schemas": {
+    "operationEnvelope": "road://schema/collaboration/operation-envelope/v1",
+    "session": "road://schema/collaboration/session/v1",
+    "claim": "road://schema/collaboration/claim/v1",
+    "handoff": "road://schema/collaboration/handoff/v1",
+    "receipt": "road://schema/collaboration/receipt/v1",
+    "event": "road://schema/collaboration/event/v1"
+  }
+}

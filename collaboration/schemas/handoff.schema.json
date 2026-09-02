@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration/handoff/v1",
+  "title": "BlackRoad Agent Handoff",
+  "type": "object",
+  "required": ["id", "version", "correlationId", "from", "toAgentId", "kind", "summary", "state", "createdAt", "expiresAt"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^handoff_"},
+    "version": {"const": "1.0"},
+    "correlationId": {"type": "string"},
+    "causationId": {"type": ["string", "null"]},
+    "from": {
+      "type": "object",
+      "required": ["agentId", "sessionId", "runtime"],
+      "properties": {
+        "agentId": {"type": "string", "pattern": "^agent-instance-[1-6]$"},
+        "sessionId": {"type": "string", "pattern": "^session_"},
+        "runtime": {"enum": ["claude", "chatgpt", "codex", "roadie", "human", "other"]}
+      },
+      "additionalProperties": false
+    },
+    "toAgentId": {"type": "string", "pattern": "^agent-instance-[1-6]$"},
+    "kind": {"type": "string", "minLength": 1},
+    "summary": {"type": "string", "minLength": 1},
+    "requiredAction": {"type": ["string", "null"]},
+    "connectorIds": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "targetRefs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "evidenceRefs": {"type": "array", "items": {"type": "string"}},
+    "state": {"enum": ["offered", "accepted", "in_progress", "completed", "rejected", "expired"]},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "expiresAt": {"type": "string", "format": "date-time"}
+  },
+  "additionalProperties": true
+}

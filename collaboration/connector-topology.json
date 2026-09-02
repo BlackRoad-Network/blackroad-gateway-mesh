@@ -1,0 +1,96 @@
+{
+  "schema": "road-connector-collaboration-topology-v1",
+  "service": "road://service/collaboration",
+  "principle": "Each connector owns one explicit collaboration responsibility; no connector silently becomes the authority for another plane.",
+  "planes": [
+    {
+      "id": "source-and-review",
+      "primary": "github",
+      "authoritativeFor": ["source", "branches", "commits", "pull-request-review"],
+      "mirrors": ["forgejo"],
+      "writePattern": "branch-per-agent plus expected-blob-sha",
+      "events": ["branch.created", "commit.created", "pull-request.updated"]
+    },
+    {
+      "id": "work-graph",
+      "primary": "linear",
+      "authoritativeFor": ["issues", "projects", "milestones", "release-work"],
+      "mirrors": ["asana"],
+      "writePattern": "external-correlation-id plus observed-updated-at",
+      "events": ["work.claimed", "work.blocked", "work.completed"]
+    },
+    {
+      "id": "structured-registry",
+      "primary": "airtable",
+      "authoritativeFor": ["operational-indexes", "connector-census", "handoff-index"],
+      "mirrors": [],
+      "writePattern": "record-key plus road-version field",
+      "events": ["registry.record.created", "registry.record.updated"]
+    },
+    {
+      "id": "documentation",
+      "primary": "notion",
+      "authoritativeFor": ["living-operational-docs"],
+      "mirrors": ["gitbook", "google-drive", "microsoft-sharepoint"],
+      "writePattern": "page-id plus last-edited-time precondition",
+      "events": ["document.proposed", "document.published"]
+    },
+    {
+      "id": "notifications",
+      "primary": "slack",
+      "authoritativeFor": ["human-visible-operational-notifications"],
+      "mirrors": ["resend", "gmail"],
+      "writePattern": "correlation marker plus thread reply",
+      "events": ["handoff.offered", "approval.required", "operation.failed"]
+    },
+    {
+      "id": "governance",
+      "primary": "neura-relay",
+      "authoritativeFor": ["decision-receipts", "sensitive-action-gates"],
+      "mirrors": [],
+      "writePattern": "action-card-to-decision-receipt",
+      "events": ["decision.allowed", "decision.stopped"]
+    },
+    {
+      "id": "secret-plane",
+      "primary": "1password",
+      "authoritativeFor": ["secret-values", "environment-secret-references"],
+      "mirrors": [],
+      "writePattern": "reference-only outside provider",
+      "events": ["secret.reference.available", "secret.rotation.required"]
+    },
+    {
+      "id": "private-transport",
+      "primary": "tailscale",
+      "authoritativeFor": ["private-service-identity", "private-routing"],
+      "mirrors": ["wireguard"],
+      "writePattern": "listener-preflight plus grants merge plus explicit service advertisement",
+      "events": ["peer.online", "service.advertised", "route.changed"]
+    },
+    {
+      "id": "public-directory",
+      "primary": "netlify",
+      "authoritativeFor": ["public-read-only-gateway-metadata"],
+      "mirrors": ["vercel", "webflow"],
+      "writePattern": "deploy claim plus Neura decision receipt",
+      "events": ["deploy.proposed", "deploy.completed"]
+    },
+    {
+      "id": "observability",
+      "primary": "posthog",
+      "authoritativeFor": ["operational-telemetry", "connector-health-trends", "llm-traces"],
+      "mirrors": ["amplitude"],
+      "writePattern": "append-only telemetry with redacted references",
+      "events": ["operation.observed", "connector.health.changed"]
+    }
+  ],
+  "crossPlaneRules": [
+    "source-control-does-not-own-task-status",
+    "task-system-does-not-own-source-state",
+    "notification-delivery-does-not-prove-work-completion",
+    "observability-does-not-grant-authority",
+    "secret-manager-does-not-disclose-values-to-collaboration-ledger",
+    "public-directory-does-not-proxy-provider-credentials",
+    "governance-decision-does-not-execute-downstream-actions"
+  ]
+}

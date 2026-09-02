@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration/operation-envelope/v1",
+  "title": "BlackRoad Connector Operation Envelope",
+  "type": "object",
+  "required": ["version", "operationId", "idempotencyKey", "correlationId", "actor", "connector", "target", "intent", "createdAt", "privacy"],
+  "properties": {
+    "version": {"const": "1.0"},
+    "operationId": {"type": "string", "minLength": 1},
+    "idempotencyKey": {"type": "string", "minLength": 1},
+    "correlationId": {"type": "string", "minLength": 1},
+    "causationId": {"type": ["string", "null"]},
+    "claimRef": {"type": ["string", "null"]},
+    "actor": {
+      "type": "object",
+      "required": ["agentId", "sessionId", "runtime"],
+      "properties": {
+        "agentId": {"type": "string", "pattern": "^agent-instance-[1-6]$"},
+        "sessionId": {"type": "string", "pattern": "^session_"},
+        "runtime": {"enum": ["claude", "chatgpt", "codex", "roadie", "human", "other"]},
+        "model": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "connector": {
+      "type": "object",
+      "required": ["id", "operation", "authorityClass"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "operation": {"type": "string", "minLength": 1},
+        "authorityClass": {"enum": ["metadata-read", "provider-read", "write", "deploy", "admin", "secret", "public-exposure"]}
+      },
+      "additionalProperties": false
+    },
+    "target": {
+      "type": "object",
+      "required": ["kind", "ref"],
+      "properties": {
+        "kind": {"type": "string"},
+        "ref": {"type": "string"},
+        "expectedVersion": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "intent": {
+      "type": "object",
+      "required": ["summary", "requestedBy", "evidenceRefs"],
+      "properties": {
+        "summary": {"type": "string"},
+        "requestedBy": {"type": "string"},
+        "evidenceRefs": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "preconditions": {"type": "array", "items": {"type": "string"}},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "expiresAt": {"type": ["string", "null"], "format": "date-time"},
+    "privacy": {
+      "type": "object",
+      "required": ["secretValuesAllowed", "payloadMode"],
+      "properties": {
+        "secretValuesAllowed": {"const": false},
+        "payloadMode": {"const": "refs-hashes-and-metadata-only"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "connector": {
+            "properties": {
+              "authorityClass": {"enum": ["write", "deploy", "admin", "secret", "public-exposure"]}
+            }
+          }
+        }
+      },
+      "then": {"required": ["claimRef"]}
+    }
+  ],
+  "additionalProperties": false
+}

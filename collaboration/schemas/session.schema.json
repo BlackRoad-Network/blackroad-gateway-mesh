@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration/session/v1",
+  "title": "BlackRoad Collaboration Session",
+  "type": "object",
+  "required": ["id", "version", "agentId", "agentUri", "runtime", "state", "startedAt", "lastHeartbeatAt", "expiresAt"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^session_"},
+    "version": {"const": "1.0"},
+    "agentId": {"type": "string", "pattern": "^agent-instance-[1-6]$"},
+    "agentUri": {"type": "string", "pattern": "^road://agent/agent-instance-[1-6]$"},
+    "runtime": {"enum": ["claude", "chatgpt", "codex", "roadie", "human", "other"]},
+    "model": {"type": ["string", "null"]},
+    "workspace": {"type": "string"},
+    "state": {"enum": ["active", "expired", "closed"]},
+    "correlationId": {"type": "string"},
+    "startedAt": {"type": "string", "format": "date-time"},
+    "lastHeartbeatAt": {"type": "string", "format": "date-time"},
+    "expiresAt": {"type": "string", "format": "date-time"},
+    "capabilities": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration/event/v1",
+  "title": "BlackRoad Collaboration Event",
+  "type": "object",
+  "required": ["id", "version", "type", "timestamp", "actor", "classification", "payloadRefs"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^evt_"},
+    "version": {"const": "1.0"},
+    "type": {"type": "string", "pattern": "^road\\.(collaboration|connector)\\."},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "actor": {"type": "object"},
+    "correlationId": {"type": ["string", "null"]},
+    "causationId": {"type": ["string", "null"]},
+    "connectorId": {"type": ["string", "null"]},
+    "targetRef": {"type": ["string", "null"]},
+    "classification": {"type": "string"},
+    "payloadRefs": {"type": "array", "items": {"type": "string"}},
+    "summary": {"type": ["string", "null"]}
+  },
+  "additionalProperties": false
+}
