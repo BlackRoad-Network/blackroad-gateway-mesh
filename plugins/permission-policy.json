@@ -1,0 +1,72 @@
+{
+  "schema": "road-plugin-permission-policy-v1",
+  "appliedToChatGPTSettings": false,
+  "defaultRecommendation": "ask_before_writes",
+  "rationale": "Read metadata without ceremony; require explicit authority for writes, administration, secrets, deployment, networking, and public exposure.",
+  "allowedModes": ["inherit", "always_ask", "ask_before_writes", "review_important_actions", "full_access"],
+  "tiers": [
+    {
+      "id": "metadata",
+      "operations": ["discover", "metadata.read", "health", "capabilities"],
+      "gate": "read-only",
+      "recommendedMode": "ask_before_writes"
+    },
+    {
+      "id": "ordinary-write",
+      "operations": ["write"],
+      "gate": "explicit-user-intent+provider-native-auth",
+      "recommendedMode": "ask_before_writes"
+    },
+    {
+      "id": "important-write",
+      "operations": ["deploy", "send", "publish", "external-write"],
+      "gate": "explicit-user-intent+provider-native-auth+neura-when-sensitive",
+      "recommendedMode": "review_important_actions"
+    },
+    {
+      "id": "admin",
+      "operations": ["admin", "network.modify", "identity.modify", "billing.modify"],
+      "gate": "explicit-confirmation+provider-native-auth+neura",
+      "recommendedMode": "always_ask"
+    },
+    {
+      "id": "secret",
+      "operations": ["secret.reference", "secret.mount", "credential.rotate"],
+      "gate": "explicit-confirmation+local-secret-manager",
+      "recommendedMode": "always_ask"
+    },
+    {
+      "id": "public-exposure",
+      "operations": ["public.expose", "funnel.enable", "dns.publish"],
+      "gate": "explicit-confirmation+neura+provider-native-auth",
+      "recommendedMode": "always_ask"
+    }
+  ],
+  "pluginOverrides": [
+    {"pluginId": "1password", "tier": "secret", "recommendedMode": "always_ask", "reason": "Secret references and local environment mounts."},
+    {"pluginId": "stripe", "tier": "admin", "recommendedMode": "always_ask", "reason": "Payments and account changes."},
+    {"pluginId": "docusign", "tier": "important-write", "recommendedMode": "review_important_actions", "reason": "Agreement and signature actions affect external parties."},
+    {"pluginId": "pandadoc", "tier": "important-write", "recommendedMode": "review_important_actions", "reason": "Document sending and signatures affect external parties."},
+    {"pluginId": "resend", "tier": "important-write", "recommendedMode": "review_important_actions", "reason": "Outbound email and webhook changes."},
+    {"pluginId": "github", "tier": "important-write", "recommendedMode": "review_important_actions", "reason": "Repository writes, pull requests, merges, and Actions."},
+    {"pluginId": "netlify", "tier": "public-exposure", "recommendedMode": "always_ask", "reason": "Production deploys and public endpoint changes."},
+    {"pluginId": "vercel", "tier": "public-exposure", "recommendedMode": "always_ask", "reason": "Production deploys, domains, and environment changes."},
+    {"pluginId": "tailscale", "tier": "admin", "recommendedMode": "always_ask", "reason": "Tailnet access, routes, Serve, Funnel, and policy changes."},
+    {"pluginId": "digitalocean", "tier": "admin", "recommendedMode": "always_ask", "reason": "Compute lifecycle, networking, and destructive actions."},
+    {"pluginId": "workos", "tier": "admin", "recommendedMode": "always_ask", "reason": "Identity, SSO, directory, and organization changes."},
+    {"pluginId": "dataverse", "tier": "admin", "recommendedMode": "always_ask", "reason": "Environment, schema, data, and security changes."},
+    {"pluginId": "supabase", "tier": "admin", "recommendedMode": "always_ask", "reason": "Database, auth, RLS, storage, and edge functions."},
+    {"pluginId": "google-calendar", "tier": "ordinary-write", "recommendedMode": "ask_before_writes", "reason": "Calendar mutations notify or affect schedules."},
+    {"pluginId": "gmail", "tier": "important-write", "recommendedMode": "review_important_actions", "reason": "Sending, forwarding, deleting, or relabeling mail."},
+    {"pluginId": "webflow", "tier": "public-exposure", "recommendedMode": "always_ask", "reason": "Publishing sites and mutating public content."},
+    {"pluginId": "neura-relay", "tier": "metadata", "recommendedMode": "ask_before_writes", "reason": "Decision gate does not execute downstream actions."}
+  ],
+  "invariants": [
+    "authentication-is-not-authorization",
+    "skill-availability-is-not-actor-authority",
+    "secret-values-never-enter-public-metadata",
+    "full-access-is-never-the-default",
+    "public-exposure-requires-explicit-confirmation",
+    "provider-native-auth-remains-enforced"
+  ]
+}
