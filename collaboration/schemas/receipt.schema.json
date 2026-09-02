@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration/receipt/v1",
+  "title": "BlackRoad Connector Operation Receipt",
+  "type": "object",
+  "required": ["id", "version", "operationId", "idempotencyKey", "claimRef", "actor", "connectorId", "targetRef", "operation", "mode", "startedAt", "completedAt", "result", "secretValuesPersisted"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^receipt_"},
+    "version": {"const": "1.0"},
+    "operationId": {"type": "string"},
+    "idempotencyKey": {"type": "string"},
+    "correlationId": {"type": "string"},
+    "causationId": {"type": ["string", "null"]},
+    "claimRef": {"type": "string", "pattern": "^claim_"},
+    "actor": {
+      "type": "object",
+      "required": ["agentId", "sessionId", "runtime"],
+      "properties": {
+        "agentId": {"type": "string", "pattern": "^agent-instance-[1-6]$"},
+        "sessionId": {"type": "string", "pattern": "^session_"},
+        "runtime": {"enum": ["claude", "chatgpt", "codex", "roadie", "human", "other"]}
+      }
+    },
+    "connectorId": {"type": "string"},
+    "targetRef": {"type": "string"},
+    "operation": {"type": "string"},
+    "mode": {"enum": ["write", "deploy", "admin", "secret", "public-exposure"]},
+    "startedAt": {"type": "string", "format": "date-time"},
+    "completedAt": {"type": "string", "format": "date-time"},
+    "result": {"enum": ["succeeded", "failed", "unknown", "cancelled", "compensated"]},
+    "expectedVersion": {"type": ["string", "null"]},
+    "observedVersion": {"type": ["string", "null"]},
+    "resultingVersion": {"type": ["string", "null"]},
+    "evidenceRefs": {"type": "array", "items": {"type": "string"}},
+    "errorCode": {"type": ["string", "null"]},
+    "secretValuesPersisted": {"const": false},
+    "redactions": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}
