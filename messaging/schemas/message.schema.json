@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/messaging/message/v1",
+  "title": "BlackRoad Messaging Message",
+  "type": "object",
+  "required": [
+    "id",
+    "uri",
+    "threadId",
+    "kind",
+    "authorActorRef",
+    "body",
+    "bodyHash",
+    "state",
+    "idempotencyKey",
+    "requestHash",
+    "projectionIds",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^message_"
+    },
+    "uri": {
+      "type": "string",
+      "pattern": "^road://message/"
+    },
+    "threadId": {
+      "type": "string",
+      "pattern": "^thread_"
+    },
+    "parentMessageId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "kind": {
+      "enum": [
+        "COMMENT",
+        "REPLY",
+        "STATUS",
+        "DECISION",
+        "HANDOFF",
+        "SYSTEM"
+      ]
+    },
+    "authorActorRef": {
+      "type": "string"
+    },
+    "authorSessionRef": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "body": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20000
+    },
+    "bodyHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "state": {
+      "enum": [
+        "PLANNED",
+        "BLOCKED",
+        "POSTED_UNVERIFIED",
+        "POSTED",
+        "PARTIAL",
+        "FAILED",
+        "TIMEOUT_UNKNOWN",
+        "RECEIVED",
+        "EDITED",
+        "DELETED"
+      ]
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "minLength": 1
+    },
+    "requestHash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "projectionIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true
+}
