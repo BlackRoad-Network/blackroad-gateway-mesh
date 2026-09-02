@@ -3,26 +3,32 @@
   "$id": "road://schema/collaboration-invocation/v1",
   "title": "BlackRoad Connector Invocation",
   "type": "object",
-  "required": ["id", "intentId", "agentId", "connectorId", "actionClass", "resourceKey", "state", "startedAt"],
+  "required": ["id","intentId","agentId","connectorId","actionClass","resourceKey","state","startedAt"],
   "properties": {
-    "id": { "type": "string", "minLength": 1 },
-    "intentId": { "type": "string", "minLength": 1 },
-    "workflowId": { "type": ["string", "null"] },
-    "agentId": { "type": "string", "pattern": "^(connector-orchestrator|agent-instance-[1-6])$" },
-    "sessionRef": { "type": ["string", "null"] },
-    "connectorId": { "type": "string", "minLength": 1 },
-    "toolName": { "type": ["string", "null"] },
-    "actionClass": { "enum": ["OBSERVE", "READ", "WRITE", "COMMUNICATE", "DEPLOY", "ADMIN", "SECRET", "PUBLIC_EXPOSE"] },
-    "resourceKey": { "type": "string", "minLength": 1 },
-    "requestHash": { "type": ["string", "null"] },
-    "providerRequestRef": { "type": ["string", "null"] },
-    "responseHash": { "type": ["string", "null"] },
-    "effectRefs": { "type": "array", "items": { "type": "string" } },
-    "state": { "enum": ["STARTED", "PROVIDER_ACKNOWLEDGED", "VERIFYING", "VERIFIED", "VERIFICATION_FAILED", "FAILED", "TIMEOUT_UNKNOWN", "BLOCKED", "PARTIAL", "CANCELLED"] },
-    "startedAt": { "type": "string", "format": "date-time" },
-    "updatedAt": { "type": "string", "format": "date-time" },
-    "completedAt": { "type": ["string", "null"] },
-    "verification": { "type": ["object", "null"] }
+    "id": {"type":"string","minLength":1},
+    "intentId": {"type":"string","minLength":1},
+    "workflowId": {"type":["string","null"]},
+    "agentId": {"type":"string","pattern":"^(connector-orchestrator|agent-instance-[1-6])$"},
+    "sessionRef": {"type":["string","null"]},
+    "connectorId": {"type":"string","minLength":1},
+    "toolName": {"type":["string","null"]},
+    "actionClass": {"enum":["OBSERVE","READ","WRITE","COMMUNICATE","DEPLOY","ADMIN","SECRET","PUBLIC_EXPOSE"]},
+    "resourceKey": {"type":"string","minLength":1},
+    "requestHash": {"type":["string","null"]},
+    "providerRequestRef": {"type":["string","null"]},
+    "responseHash": {"type":["string","null"]},
+    "effectRefs": {"type":"array","items":{"type":"string"}},
+    "state": {"enum":["STARTED","PROVIDER_ACKNOWLEDGED","VERIFYING","VERIFIED","VERIFICATION_FAILED","FAILED","TIMEOUT_UNKNOWN","BLOCKED","PARTIAL","CANCELLED"]},
+    "startedAt": {"type":"string","format":"date-time"},
+    "updatedAt": {"type":"string","format":"date-time"},
+    "completedAt": {"type":["string","null"]},
+    "verification": {"type":["object","null"]}
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {"properties":{"actionClass":{"enum":["WRITE","COMMUNICATE","DEPLOY","ADMIN","SECRET","PUBLIC_EXPOSE"]}},"required":["actionClass"]},
+      "then": {"required":["sessionRef"],"properties":{"sessionRef":{"type":"string","minLength":1}}}
+    }
+  ]
 }
