@@ -1,0 +1,58 @@
+{
+  "schema": "blackroad-plugin-adapter-v1",
+  "id": "blackroad-collaboration",
+  "label": "BlackRoad Collaboration Control Plane",
+  "class": "governance",
+  "locality": "local",
+  "status": "LOCAL_BRIDGE",
+  "roadUri": "road://service/collaboration",
+  "transport": {
+    "primary": "unix-domain-socket-json-rpc",
+    "agentBridge": "mcp-stdio",
+    "publicEndpoint": false
+  },
+  "capabilities": [
+    "agent-session-registration",
+    "connector-dispatch-planning",
+    "workflow-dag-planning",
+    "exclusive-claim-reservation",
+    "typed-handoffs",
+    "provider-version-fencing",
+    "idempotency",
+    "causal-receipts",
+    "timeout-reconciliation"
+  ],
+  "operations": {
+    "metadata": ["ping", "state.summary", "dispatch.plan", "workflow.plan", "reconcile"],
+    "write": ["collaboration.register", "dispatch.reserve", "claim.acquire", "claim.complete", "handoff.offer", "handoff.ack"],
+    "admin": [],
+    "secret": []
+  },
+  "authority": {
+    "metadataRead": "local-session",
+    "write": "stable-agent-profile+explicit-operation-envelope+exclusive-claim",
+    "admin": "unsupported",
+    "secret": "reference-only-no-secret-values"
+  },
+  "owners": {
+    "runtime": "agent-instance-6",
+    "connectorPolicy": "agent-instance-4",
+    "skills": "agent-instance-5",
+    "canon": "agent-instance-2"
+  },
+  "implementation": {
+    "daemon": "collaboration/daemon.mjs",
+    "mcp": "collaboration/mcp-server.mjs",
+    "dispatch": "collaboration/dispatch.mjs",
+    "workflow": "collaboration/workflow.mjs",
+    "execution": "collaboration/execution.mjs",
+    "reconciliation": "collaboration/reconcile.mjs"
+  },
+  "safety": {
+    "providerCredentialsProxied": false,
+    "providerWritesPerformedByDaemon": false,
+    "publicExposure": false,
+    "secretValuesPersisted": false,
+    "timeoutMeansFailure": false
+  }
+}
