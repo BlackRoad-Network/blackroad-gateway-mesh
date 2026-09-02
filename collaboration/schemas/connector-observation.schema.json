@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration/connector-observation/v1",
+  "title": "BlackRoad Connector Observation",
+  "type": "object",
+  "required": ["schema", "receiptId", "agentId", "sessionId", "connector", "target", "operation", "providerStatus", "normalizedStatus", "claimMayClose", "requiresProviderInspection", "secretValuesPersisted", "eventHash"],
+  "properties": {
+    "schema": {"const": "road-connector-observation-v1"},
+    "receiptId": {"type": "string", "pattern": "^connector_receipt_"},
+    "agentId": {"type": "string", "pattern": "^agent-instance-[1-6]$"},
+    "sessionId": {"type": "string", "minLength": 1},
+    "connector": {"type": "string", "minLength": 1},
+    "target": {"type": "string", "minLength": 1},
+    "operation": {"type": "string", "minLength": 1},
+    "providerStatus": {"type": "string", "minLength": 1},
+    "normalizedStatus": {"enum": ["STEP_SUCCEEDED", "STEP_FAILED", "TIMEOUT_UNKNOWN", "EMPTY_OBSERVATION", "AUTH_REJECTED_NOT_ABSENT", "CONFLICT", "CANCELLED", "UNKNOWN"]},
+    "claimMayClose": {"type": "boolean"},
+    "requiresProviderInspection": {"type": "boolean"},
+    "secretValuesPersisted": {"const": false},
+    "previousHash": {"type": ["string", "null"]},
+    "eventHash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  },
+  "additionalProperties": true
+}
