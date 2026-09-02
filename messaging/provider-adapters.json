@@ -1,0 +1,164 @@
+{
+  "schema": "road-messaging-provider-adapters-v1",
+  "providers": {
+    "slack": {
+      "status": "CONNECTED",
+      "surface": "hosted-connector",
+      "threadModel": "channel-message-with-thread_ts",
+      "capabilities": [
+        "spaces.search",
+        "messages.read",
+        "threads.read",
+        "messages.send",
+        "messages.reply",
+        "messages.edit",
+        "messages.delete",
+        "messages.schedule",
+        "drafts.create",
+        "canvases.read",
+        "canvases.create",
+        "canvases.update"
+      ],
+      "verification": "read-message-or-thread-after-write",
+      "resourceKey": "road+connector://slack/{workspace}/conversation/{channelId}/thread/{threadTs}",
+      "notes": [
+        "Channel and user IDs are provider bindings, not canonical identities.",
+        "Externally shared Slack Connect channels are excluded from automated writes."
+      ],
+      "toolBindings": {
+        "spaceSearch": "slack_search_channels",
+        "messageSearch": "slack_search_public_and_private",
+        "threadRead": "slack_read_thread",
+        "channelRead": "slack_read_channel",
+        "post": "slack_send_message",
+        "reply": "slack_send_message",
+        "edit": "slack_edit_message",
+        "delete": "slack_delete_message",
+        "draft": "slack_send_message_draft",
+        "schedule": "slack_schedule_message",
+        "canvasRead": "slack_read_canvas",
+        "canvasCreate": "slack_create_canvas",
+        "canvasUpdate": "slack_update_canvas"
+      }
+    },
+    "microsoft-teams": {
+      "status": "CONNECTOR_UNAVAILABLE",
+      "surface": "adapter-contract-only",
+      "threadModel": "team-channel-post-with-replies",
+      "capabilities": [
+        "teams.list",
+        "channels.list",
+        "messages.read",
+        "messages.send",
+        "messages.reply",
+        "messages.edit",
+        "messages.delete",
+        "reactions.add"
+      ],
+      "verification": "read-message-or-reply-after-write",
+      "resourceKey": "road+connector://microsoft-teams/{tenant}/team/{teamId}/channel/{channelId}/thread/{messageId}",
+      "notes": [
+        "Do not report Teams as connected until an authenticated connector surface is observed.",
+        "Microsoft SharePoint access is not equivalent to Teams messaging access."
+      ],
+      "toolBindings": {}
+    },
+    "github": {
+      "status": "CONNECTED",
+      "surface": "hosted-connector",
+      "threadModel": "issue-pr-discussion-comment",
+      "capabilities": [
+        "issues.read",
+        "issues.comment",
+        "pulls.read",
+        "pulls.comment",
+        "reviews.comment",
+        "threads.resolve"
+      ],
+      "verification": "read-comment-or-thread-after-write",
+      "resourceKey": "road+connector://github/{owner}/{repo}/{kind}/{number}/thread/{threadId}",
+      "notes": [
+        "Issue comments, PR conversation comments, and inline review threads are distinct projections.",
+        "Resolve/unresolve applies only where GitHub exposes a review-thread primitive."
+      ],
+      "toolBindings": {
+        "conversationRead": "fetch_pr_comments",
+        "issueRead": "fetch_issue",
+        "post": "add_comment_to_issue",
+        "edit": "update_issue_comment",
+        "inlineReview": "add_review_to_pr",
+        "threadList": "list_pull_request_review_threads",
+        "threadResolve": "resolve_review_thread",
+        "threadUnresolve": "unresolve_review_thread"
+      }
+    },
+    "linear": {
+      "status": "CONNECTED",
+      "surface": "hosted-connector",
+      "threadModel": "issue-comments",
+      "capabilities": [
+        "issues.read",
+        "comments.read",
+        "comments.create",
+        "comments.update"
+      ],
+      "verification": "read-comment-after-write",
+      "resourceKey": "road+connector://linear/{workspace}/issue/{issueId}/thread/{commentRootId}",
+      "toolBindings": {
+        "issueRead": "get_issue",
+        "commentsRead": "list_comments",
+        "post": "create_comment",
+        "edit": "update_comment"
+      }
+    },
+    "notion": {
+      "status": "CONNECTED",
+      "surface": "hosted-connector",
+      "threadModel": "page-comments-when-supported",
+      "capabilities": [
+        "pages.read",
+        "comments.read",
+        "comments.create"
+      ],
+      "verification": "read-comment-after-write",
+      "resourceKey": "road+connector://notion/{workspace}/page/{pageId}/thread/{discussionId}"
+    },
+    "gmail": {
+      "status": "CONNECTED",
+      "surface": "hosted-connector",
+      "threadModel": "email-thread",
+      "capabilities": [
+        "threads.read",
+        "drafts.create",
+        "messages.send",
+        "messages.reply"
+      ],
+      "verification": "read-sent-message-or-thread-after-write",
+      "resourceKey": "road+connector://gmail/{account}/thread/{threadId}",
+      "notes": [
+        "Email is a delivery adapter, not the canonical discussion store."
+      ],
+      "toolBindings": {
+        "threadRead": "read_thread",
+        "draft": "create_draft",
+        "send": "send_email",
+        "reply": "reply_to_thread"
+      }
+    },
+    "resend": {
+      "status": "READY_EMPTY",
+      "surface": "hosted-connector",
+      "threadModel": "transactional-delivery-only",
+      "capabilities": [
+        "messages.send",
+        "delivery.status",
+        "webhooks.receive"
+      ],
+      "verification": "provider-delivery-status",
+      "resourceKey": "road+connector://resend/{account}/message/{messageId}",
+      "notes": [
+        "No domain or webhook was previously observed; keep outbound disabled until configured."
+      ]
+    }
+  }
+}
