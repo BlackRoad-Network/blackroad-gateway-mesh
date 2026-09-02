@@ -29,6 +29,8 @@ Repository recommendations are deliberately separate from ChatGPT's actual app-p
 - production deployment and public exposure: `always_ask`
 - external communications and repository writes: `review_important_actions`
 
+The September 2, 2026 read-only permission audit found high drift for Netlify and GitHub, which currently have app-specific `full_access`, and medium drift for Neura Relay MCP. No platform permission was changed during the audit. See `PERMISSION-DRIFT.md` and `plugins/observed-permissions.json`.
+
 No permission change is considered applied unless the platform permission tool returns success for an explicit user-selected mode.
 
 ## Gateway metadata routes
@@ -59,3 +61,12 @@ npm test
 ## Adapter plane
 
 Every registered service receives a generated adapter manifest under `/gateway/adapters`. The manifest joins connector state, skill routes, permission tier, provider-native authentication, write gate, secret model, and owner without enabling provider execution through the public gateway.
+
+Public-safe orientation files:
+
+- `BACKEND-SUMMARY.json`
+- `skills/skill-router.summary.json`
+- `plugins/adapter-provider-summary.json`
+- `plugins/observed-permissions.json`
+
+The exact v0.5.0 package is retained privately with its checksum recorded in `BACKEND-v0.5.0.md`.
