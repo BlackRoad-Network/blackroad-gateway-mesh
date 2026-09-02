@@ -29,6 +29,21 @@ Size: 71,722 bytes.
 
 The public repository deliberately does not expose the private Drive object identifier. Resolve the artifact by exact title through the connected Drive surface.
 
+## Public-safe branch metadata
+
+- `BACKEND-SUMMARY.json`
+- `PLUGIN-SKILL-BACKEND.md`
+- `PERMISSION-DRIFT.md`
+- `skills/skill-route.schema.json`
+- `skills/agent-profile.schema.json`
+- `skills/agent-profiles.json`
+- `skills/skill-router.summary.json`
+- `plugins/plugin-permission-policy.schema.json`
+- `plugins/permission-policy.json`
+- `plugins/observed-permissions.json`
+- `plugins/dependency-graph.json`
+- `plugins/adapter-provider-summary.json`
+
 ## Backend routes
 
 - `/gateway/plugins`
