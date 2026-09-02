@@ -1,0 +1,28 @@
+name: Messaging framework
+
+on:
+  push:
+    branches:
+      - gateway-messaging-framework-v1
+  pull_request:
+    paths:
+      - "messaging/**"
+      - "skills/road-messaging-framework/**"
+      - "MESSAGING-FRAMEWORK.md"
+      - ".github/workflows/messaging-framework.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify messaging schemas, runtime, and tests
+        working-directory: messaging
+        run: npm run verify
