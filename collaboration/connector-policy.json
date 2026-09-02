@@ -1,0 +1,43 @@
+{
+  "schema": "road-connector-collaboration-policy-v1",
+  "defaults": {
+    "read": {
+      "claimRequired": false,
+      "receiptRequired": true,
+      "freshnessRequired": true
+    },
+    "mutation": {
+      "claimRequired": true,
+      "idempotencyKeyRequired": true,
+      "expectedVersion": "when-supported",
+      "receiptRequired": true,
+      "maximumConcurrentMutationsPerAgent": 1,
+      "timeoutResult": "TIMEOUT_UNKNOWN",
+      "zeroResult": "EMPTY_OBSERVATION"
+    }
+  },
+  "connectors": [
+    {"id": "github", "resourceKey": "repository+branch+path", "isolation": "branch-per-agent", "expectedVersion": "blob-sha-or-head-sha", "writeGate": "explicit-intent+provider-auth", "conflictAction": "stop-and-handoff"},
+    {"id": "forgejo", "resourceKey": "repository+branch+path", "isolation": "branch-per-agent", "expectedVersion": "blob-sha-or-head-sha", "writeGate": "explicit-intent+provider-auth", "conflictAction": "stop-and-handoff"},
+    {"id": "linear", "resourceKey": "workspace+issue-or-project-id", "isolation": "record-claim", "expectedVersion": "updated-at-when-available", "writeGate": "explicit-intent+provider-auth", "conflictAction": "re-read-and-reconcile"},
+    {"id": "asana", "resourceKey": "workspace+task-or-project-gid", "isolation": "record-claim", "expectedVersion": "modified-at-when-available", "writeGate": "explicit-intent+provider-auth", "conflictAction": "re-read-and-reconcile"},
+    {"id": "airtable", "resourceKey": "base+table+record", "isolation": "record-claim", "expectedVersion": "road-version-field", "writeGate": "explicit-intent+provider-auth", "conflictAction": "compare-road-version"},
+    {"id": "notion", "resourceKey": "workspace+page-or-database-id", "isolation": "page-claim", "expectedVersion": "last-edited-time", "writeGate": "explicit-intent+provider-auth", "conflictAction": "re-read-and-create-merge-handoff"},
+    {"id": "gitbook", "resourceKey": "organization+space+page", "isolation": "page-claim", "expectedVersion": "revision-id", "writeGate": "explicit-intent+provider-auth", "conflictAction": "change-request"},
+    {"id": "google-drive", "resourceKey": "drive+file-id", "isolation": "file-claim", "expectedVersion": "revision-id-or-etag", "writeGate": "explicit-intent+provider-auth", "conflictAction": "new-revision-or-handoff"},
+    {"id": "microsoft-sharepoint", "resourceKey": "drive-id+item-id", "isolation": "file-claim", "expectedVersion": "etag-or-version-id", "writeGate": "explicit-intent+provider-auth", "conflictAction": "re-read-version-history"},
+    {"id": "slack", "resourceKey": "workspace+channel+thread", "isolation": "append-only", "expectedVersion": "not-applicable", "writeGate": "explicit-intent+provider-auth", "conflictAction": "deduplicate-by-correlation-id"},
+    {"id": "gmail", "resourceKey": "account+draft-or-thread-id", "isolation": "draft-claim", "expectedVersion": "message-or-draft-id", "writeGate": "explicit-intent+provider-auth", "conflictAction": "do-not-send-duplicate"},
+    {"id": "google-calendar", "resourceKey": "calendar-id+event-id", "isolation": "event-claim", "expectedVersion": "etag", "writeGate": "explicit-intent+provider-auth", "conflictAction": "reject-stale-etag"},
+    {"id": "resend", "resourceKey": "account+domain-or-message-or-webhook-id", "isolation": "object-claim", "expectedVersion": "provider-id", "writeGate": "explicit-intent+provider-auth", "conflictAction": "idempotency-key"},
+    {"id": "netlify", "resourceKey": "site-id+resource", "isolation": "site-resource-claim", "expectedVersion": "deploy-id-or-env-updated-at", "writeGate": "explicit-intent+provider-auth+neura-for-deploy-or-public-exposure", "conflictAction": "stop-on-neura-or-stale-deploy"},
+    {"id": "vercel", "resourceKey": "project-id+resource", "isolation": "project-resource-claim", "expectedVersion": "deployment-id-or-config-version", "writeGate": "explicit-intent+provider-auth+neura-for-production", "conflictAction": "stop-on-stale-project-state"},
+    {"id": "tailscale", "resourceKey": "tailnet+policy-or-service", "isolation": "single-policy-writer", "expectedVersion": "policy-hash-and-listener-observation", "writeGate": "explicit-confirmation+provider-auth+neura-for-public-exposure", "conflictAction": "merge-grants-never-replace-blindly"},
+    {"id": "1password", "resourceKey": "account+environment+variable-name", "isolation": "secret-reference-claim", "expectedVersion": "environment-id+variable-name", "writeGate": "explicit-confirmation+local-app-approval", "conflictAction": "never-copy-secret-value"},
+    {"id": "neura-relay", "resourceKey": "action-card-ref", "isolation": "decision-only", "expectedVersion": "action-card-version", "writeGate": "protocol-validation", "conflictAction": "decision-does-not-execute"},
+    {"id": "posthog", "resourceKey": "organization+project+object-id", "isolation": "object-claim-or-append-only-telemetry", "expectedVersion": "object-id+updated-at", "writeGate": "explicit-intent+provider-auth", "conflictAction": "telemetry-never-becomes-authority"},
+    {"id": "stripe", "resourceKey": "account+object-id", "isolation": "object-claim", "expectedVersion": "provider-object-state", "writeGate": "explicit-confirmation+provider-auth+neura", "conflictAction": "stop-before-live-mode-switch"},
+    {"id": "dataverse", "resourceKey": "environment+solution+record-or-metadata-id", "isolation": "environment-and-object-claim", "expectedVersion": "etag-or-solution-version", "writeGate": "confirmed-environment+confirmed-solution+provider-auth", "conflictAction": "stop-on-environment-ambiguity"},
+    {"id": "supabase", "resourceKey": "project+database-or-auth-resource", "isolation": "project-resource-claim", "expectedVersion": "migration-or-object-version", "writeGate": "explicit-confirmation+provider-auth", "conflictAction": "migration-first-no-blind-schema-write"}
+  ]
+}
