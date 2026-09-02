@@ -1,0 +1,41 @@
+{
+  "schema": "road-platform-plugin-permissions-observation-v1",
+  "observedAt": "2026-09-02T14:34:18Z",
+  "freshness": "session-observed",
+  "source": "Plugin Management permission inspection",
+  "globalDefault": {
+    "mode": "ALLOW_LOW_RISK_ACTIONS",
+    "description": "Low-risk actions may be approved automatically; sensitive actions may still be denied."
+  },
+  "disclosure": "These are observed ChatGPT app settings and tool-surface states. They do not replace provider authorization, target confirmation, or Neura decisions.",
+  "apps": [
+    {"id":"github","appName":"GitHub","appState":"INSTALLED","permissionMode":"ALLOW_ALL_ACTIONS","skillState":"CONNECTED_TOOL_SURFACE","currentToolSurface":"READ_WRITE","mutationState":"WRITE_VERIFIED","governance":"PROVIDER_AND_REPOSITORY_CONTROLS_REMAIN"},
+    {"id":"netlify","appName":"Netlify","appState":"INSTALLED","permissionMode":"ALLOW_ALL_ACTIONS","skillState":"INSTALLED_SPECIALIST_SKILLS","currentToolSurface":"READ_WRITE","mutationState":"POLICY_BLOCKED_PUBLIC_DEPLOY","governance":"NEURA_STOP"},
+    {"id":"linear","appName":"Linear","appState":"INSTALLED","permissionMode":"ALLOW_ALL_ACTIONS","skillState":"NO_LINEAR_AGENT_SKILLS_CONFIGURED","currentToolSurface":"READ_ONLY_CURRENT_REFRESH","mutationState":"SURFACE_UNAVAILABLE","governance":"PROVIDER_CONTROLS_REMAIN"},
+    {"id":"neura-relay","appName":"Neura Relay MCP","appState":"INSTALLED","permissionMode":"ALLOW_ALL_ACTIONS","skillState":"DECISION_GATE","currentToolSurface":"DECISION_GATE_ONLY","mutationState":"DOES_NOT_EXECUTE_DOWNSTREAM","governance":"REGISTRY_PARTICIPANT_MISSING"},
+    {"id":"slack","appName":"Slack","appState":"INSTALLED","permissionMode":"ALLOW_ALL_ACTIONS","skillState":"CONNECTED_TOOL_SURFACE","currentToolSurface":"MIXED_READ_WRITE","mutationState":"PROVIDER_AUTH_REQUIRED","governance":"EXTERNAL_COMMUNICATION_RULES_APPLY"},
+    {"id":"posthog","appName":"PostHog","appState":"INSTALLED","permissionMode":"USE_GLOBAL_DEFAULT","skillState":"INSTALLED_SPECIALIST_SKILLS","currentToolSurface":"MIXED_READ_WRITE","mutationState":"LOW_RISK_DEFAULT_ONLY","governance":"PROVIDER_CONTROLS_REMAIN"},
+    {"id":"resend","appName":"Resend","appState":"INSTALLED","permissionMode":"USE_GLOBAL_DEFAULT","skillState":"INSTALLED_SPECIALIST_SKILLS","currentToolSurface":"MIXED_READ_WRITE","mutationState":"READY_EMPTY_CONFIGURATION","governance":"OUTBOUND_AND_WEBHOOK_WRITES_REQUIRE_INTENT"},
+    {"id":"vercel","appName":"Vercel","appState":"INSTALLED","permissionMode":"USE_GLOBAL_DEFAULT","skillState":"INSTALLED_SPECIALIST_SKILLS","currentToolSurface":"READ_WRITE","mutationState":"PROVIDER_AUTH_REQUIRED","governance":"PUBLIC_DEPLOY_REQUIRES_SEPARATE_AUTHORITY"},
+    {"id":"railway","appName":"Railway","appState":"INSTALLED","permissionMode":"USE_GLOBAL_DEFAULT","skillState":"INSTALLED_SPECIALIST_SKILL","currentToolSurface":"READ_WRITE","mutationState":"NO_ACTIVE_DEPLOYMENTS_OBSERVED","governance":"PUBLIC_DEPLOY_REQUIRES_SEPARATE_AUTHORITY"},
+    {"id":"supabase","appName":"Supabase","appState":"INSTALLED","permissionMode":"USE_GLOBAL_DEFAULT","skillState":"INSTALLED_SPECIALIST_SKILLS","currentToolSurface":"READ_WRITE","mutationState":"PROJECT_INACTIVE","governance":"DATABASE_ADMIN_RULES_APPLY"},
+    {"id":"notion","appName":"Notion","appState":"INSTALLED","permissionMode":"USE_GLOBAL_DEFAULT","skillState":"INSTALLED_SPECIALIST_SKILLS","currentToolSurface":"READ_ONLY_CURRENT_REFRESH","mutationState":"SURFACE_UNAVAILABLE","governance":"WORKSPACE_CONTROLS_REMAIN"},
+    {"id":"airtable","appName":"Airtable","appState":"INSTALLED","permissionMode":"USE_GLOBAL_DEFAULT","skillState":"INSTALLED_SPECIALIST_SKILLS","currentToolSurface":"READ_ONLY_CURRENT_REFRESH","mutationState":"SURFACE_UNAVAILABLE","governance":"BASE_PERMISSIONS_REMAIN"},
+    {"id":"openai-platform","appName":"OpenAI Platform","appState":"INSTALLED","permissionMode":"USE_GLOBAL_DEFAULT","skillState":"INSTALLED_SPECIALIST_SKILLS","currentToolSurface":"SECURE_KEY_TARGET_DISCOVERY","mutationState":"SECURE_WIDGET_REQUIRED","governance":"PROJECT_AND_ORGANIZATION_CONTROLS_REMAIN"},
+    {"id":"hugging-face","appName":"Hugging Face","appState":"INSTALLED","permissionMode":"USE_GLOBAL_DEFAULT","skillState":"INSTALLED_SPECIALIST_SKILLS","currentToolSurface":"READ_WRITE_JOBS","mutationState":"NO_ACTIVE_JOBS","governance":"PROVIDER_CONTROLS_REMAIN"},
+    {"id":"digitalocean","appName":"DigitalOcean","appState":"INSTALLED","permissionMode":"USE_GLOBAL_DEFAULT","skillState":"CONNECTED_TOOL_SURFACE","currentToolSurface":"READ_WRITE_ADMIN","mutationState":"EXPLICIT_ADMIN_AUTHORITY_REQUIRED","governance":"COMPUTE_LIFECYCLE_RULES_APPLY"},
+    {"id":"windsor-ai","appName":"Windsor.ai","appState":"INSTALLED","permissionMode":"USE_GLOBAL_DEFAULT","skillState":"CONNECTED_TOOL_SURFACE","currentToolSurface":"READ_WRITE_BY_CONNECTOR","mutationState":"READY_EMPTY_NO_CONFIGURED_CONNECTORS","governance":"CONNECTOR_SPECIFIC_AUTHORITY_APPLIES"},
+    {"id":"tailscale","appName":"Tailscale","appState":"NOT_INSTALLED","permissionMode":"INHERITS_GLOBAL_IF_INSTALLED","skillState":"INSTALLED_LOCAL_SKILL","currentToolSurface":"LOCAL_EXECUTION_REQUIRED","mutationState":"TAILNET_CONFIG_REQUIRED","governance":"NETWORK_ADMIN_AND_FUNNEL_GATES_APPLY"},
+    {"id":"1password","appName":"1Password","appState":"NOT_INSTALLED","permissionMode":"INHERITS_GLOBAL_IF_INSTALLED","skillState":"INSTALLED_LOCAL_SKILL","currentToolSurface":"LOCAL_MCP_REQUIRED","mutationState":"DESKTOP_APPROVAL_REQUIRED","governance":"SECRET_VALUES_NEVER_EXPOSED"},
+    {"id":"nvidia","appName":"NVIDIA","appState":"NOT_INSTALLED","permissionMode":"INHERITS_GLOBAL_IF_INSTALLED","skillState":"INSTALLED_LOCAL_SKILL_CATALOG","currentToolSurface":"LOCAL_CODEX_EXECUTION","mutationState":"DEVICE_CONTEXT_REQUIRED","governance":"DEVICE_ADMIN_RULES_APPLY"},
+    {"id":"proxyman","appName":"Proxyman","appState":"NOT_INSTALLED","permissionMode":"INHERITS_GLOBAL_IF_INSTALLED","skillState":"INSTALLED_LOCAL_SKILLS","currentToolSurface":"LOCAL_APP_MCP_REQUIRED","mutationState":"LOCAL_APPROVAL_REQUIRED","governance":"TRAFFIC_AND_CERTIFICATE_RULES_APPLY"},
+    {"id":"zzzops","appName":"ZzzOps","appState":"NOT_INSTALLED","permissionMode":"INHERITS_GLOBAL_IF_INSTALLED","skillState":"INSTALLED_REPOSITORY_SKILLS","currentToolSurface":"LOCAL_REPOSITORY_EXECUTION","mutationState":"PROJECT_POLICY_REQUIRED","governance":"GOAL_AND_REVIEW_POLICY_APPLIES"}
+  ],
+  "invariants": [
+    "app-permission-is-not-provider-authority",
+    "skill-installed-is-not-app-connected",
+    "tool-surface-can-change-between-refreshes",
+    "policy-stop-applies-even-when-write-tool-exists",
+    "permission-observation-does-not-mutate-settings"
+  ]
+}
