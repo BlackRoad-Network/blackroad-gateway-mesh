@@ -1,0 +1,39 @@
+{
+  "schema": "road-messaging-release-checkpoint-v1",
+  "version": "1.7.0",
+  "branch": "gateway-messaging-v1",
+  "archive": "blackroad-messaging-framework-v1.7.0.tar.gz",
+  "archiveSha256": "010bc902a5c68113d6bb637016f881440bfb59ce1de0eff7ed114f81cb9dc311",
+  "verification": {
+    "cleanExtract": true,
+    "tests": 87,
+    "failures": 0,
+    "providers": 18,
+    "schemas": 21,
+    "modules": 23,
+    "mcpTools": 57,
+    "semanticEvalFamilies": 36
+  },
+  "capabilities": {
+    "canonicalThreads": true,
+    "durableOutbox": true,
+    "providerReadBackVerification": true,
+    "providerBindingsAfterVerifiedDelivery": true,
+    "providerMirrorReconciliation": true,
+    "governedMirrorRepair": true,
+    "governedProviderFederation": true,
+    "authenticatedInboundFederation": true,
+    "selfEchoSuppression": true,
+    "unroutedInboundQuarantine": true
+  },
+  "externalEffectsDuringVerification": {
+    "providerMessagesSent": 0,
+    "publicDeployments": 0,
+    "tailscaleMutations": 0,
+    "secretValuesPersisted": 0
+  },
+  "governance": {
+    "publicNetlifyDeploy": "BLOCKED_BY_NEURA_STOP",
+    "automaticCrossPosting": false
+  }
+}
