@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration/workflow-checkpoint/v1",
+  "title": "BlackRoad Workflow Checkpoint",
+  "type": "object",
+  "required": ["schema", "checkpointId", "agentId", "sessionId", "workflowId", "stepId", "state", "secretValuesPersisted", "eventHash"],
+  "properties": {
+    "schema": {"const": "road-workflow-checkpoint-v1"},
+    "checkpointId": {"type": "string", "pattern": "^checkpoint_"},
+    "agentId": {"type": "string", "pattern": "^agent-instance-[1-6]$"},
+    "sessionId": {"type": "string", "minLength": 1},
+    "workflowId": {"type": "string", "minLength": 1},
+    "stepId": {"type": "string", "minLength": 1},
+    "state": {"type": "string", "minLength": 1},
+    "receiptRef": {"type": ["string", "null"]},
+    "dependsOn": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "evidenceRefs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "secretValuesPersisted": {"const": false},
+    "previousHash": {"type": ["string", "null"]},
+    "eventHash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  },
+  "additionalProperties": true
+}
