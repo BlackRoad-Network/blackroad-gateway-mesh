@@ -1,0 +1,29 @@
+name: Collaboration control plane
+
+on:
+  push:
+    branches:
+      - gateway-collaboration-v1
+  pull_request:
+    paths:
+      - "collaboration/**"
+      - "bin/road-collab*"
+      - ".github/workflows/collaboration-control-plane.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: collaboration/package.json
+      - name: Verify collaboration schemas, runtime, and tests
+        working-directory: collaboration
+        run: npm run verify
