@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>BlackRoad Gateway</title>
+  <style>
+    :root{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;color-scheme:dark;background:#050505;color:#f5f5f5}
+    body{max-width:880px;margin:0 auto;padding:48px 24px;line-height:1.55}
+    code{background:#181818;padding:.15rem .35rem;border-radius:4px}
+    a{color:inherit}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:24px}
+    .card{border:1px solid #333;border-radius:8px;padding:16px}.muted{color:#aaa}
+  </style>
+</head>
+<body>
+  <main>
+    <p class="muted">road://gateway</p>
+    <h1>BlackRoad Gateway</h1>
+    <p>Read-only connector and service discovery. Provider credentials remain behind their native authentication boundaries.</p>
+    <div class="grid">
+      <a class="card" href="/gateway"><strong>/gateway</strong><br><span class="muted">gateway manifest</span></a>
+      <a class="card" href="/gateway/services"><strong>/gateway/services</strong><br><span class="muted">connector registry</span></a>
+      <a class="card" href="/gateway/health"><strong>/gateway/health</strong><br><span class="muted">normalized health</span></a>
+      <a class="card" href="/gateway/capabilities"><strong>/gateway/capabilities</strong><br><span class="muted">capability index</span></a>
+    </div>
+  </main>
+</body>
+</html>

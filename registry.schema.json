@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/gateway-registry/v1",
+  "title": "BlackRoad Gateway Service",
+  "type": "object",
+  "required": ["id", "roadUri", "class", "locality", "capabilities", "status"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "label": {"type": "string"},
+    "roadUri": {"type": "string", "pattern": "^road://"},
+    "tailscaleService": {"type": ["string", "null"]},
+    "class": {"enum": ["network","hosting","developer","data","ai","productivity","identity","governance","observability","communications","documents","domain","local-bridge"]},
+    "locality": {"enum": ["public","private","provider","local","hybrid"]},
+    "capabilities": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "status": {"type": "string"},
+    "providerStatus": {"type": ["string", "null"]},
+    "endpoint": {"type": ["string", "null"]}
+  },
+  "additionalProperties": false
+}

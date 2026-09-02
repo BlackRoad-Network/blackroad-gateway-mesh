@@ -1,0 +1,28 @@
+{
+  "schema": "road-plugin-dependency-graph-v1",
+  "nodes": [
+    {"id": "gateway-runtime", "kind": "service", "status": "implemented", "roadUri": "road://service/gateway"},
+    {"id": "plugin-catalog", "kind": "registry", "status": "implemented", "roadUri": "road://registry/plugins"},
+    {"id": "skill-router", "kind": "registry", "status": "implemented", "roadUri": "road://registry/skills"},
+    {"id": "permission-policy", "kind": "policy", "status": "implemented", "roadUri": "road://policy/plugins"},
+    {"id": "neura-relay", "kind": "governance", "status": "blocked-unregistered"},
+    {"id": "onepassword", "kind": "secret-plane", "status": "local-mcp-required"},
+    {"id": "tailscale", "kind": "private-network", "status": "tailnet-config-required"},
+    {"id": "netlify", "kind": "public-edge", "status": "deploy-blocked-by-policy"},
+    {"id": "github", "kind": "source-control", "status": "connected"},
+    {"id": "posthog", "kind": "observability", "status": "connected"},
+    {"id": "provider-adapters", "kind": "adapter-plane", "status": "implemented"}
+  ],
+  "edges": [
+    {"from": "gateway-runtime", "to": "plugin-catalog", "relation": "requires", "strength": "hard"},
+    {"from": "gateway-runtime", "to": "skill-router", "relation": "requires", "strength": "hard"},
+    {"from": "gateway-runtime", "to": "permission-policy", "relation": "requires", "strength": "hard"},
+    {"from": "gateway-runtime", "to": "provider-adapters", "relation": "routes", "strength": "hard"},
+    {"from": "provider-adapters", "to": "neura-relay", "relation": "sensitive-writes-gated-by", "strength": "conditional"},
+    {"from": "provider-adapters", "to": "onepassword", "relation": "secret-references-resolved-by", "strength": "conditional"},
+    {"from": "gateway-runtime", "to": "tailscale", "relation": "private-route", "strength": "conditional"},
+    {"from": "gateway-runtime", "to": "netlify", "relation": "public-edge", "strength": "conditional"},
+    {"from": "gateway-runtime", "to": "github", "relation": "source-and-review", "strength": "operational"},
+    {"from": "gateway-runtime", "to": "posthog", "relation": "telemetry", "strength": "optional"}
+  ]
+}

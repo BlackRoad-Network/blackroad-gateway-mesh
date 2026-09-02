@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/agent-skill-profile/v1",
+  "title": "BlackRoad Agent Skill Profile",
+  "type": "object",
+  "required": [
+    "id",
+    "role",
+    "owns",
+    "allowedSkillRoutes",
+    "mutationScope",
+    "maximumConcurrentMutations",
+    "requiredGates",
+    "handoffTo",
+    "forbidden"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^agent-instance-[1-6]$"
+    },
+    "role": {
+      "type": "string",
+      "minLength": 1
+    },
+    "owns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "allowedSkillRoutes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "mutationScope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "maximumConcurrentMutations": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "requiredGates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "handoffTo": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^agent-instance-[1-6]$"
+      },
+      "uniqueItems": true
+    },
+    "forbidden": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false
+}

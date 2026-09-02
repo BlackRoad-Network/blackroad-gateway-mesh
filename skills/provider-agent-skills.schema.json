@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/provider-agent-skill-observation/v1",
+  "title": "Provider Agent Skill Observation",
+  "type": "object",
+  "required": ["schema", "observedAt", "providers", "blackroadRepositoryProfiles", "profilesAreProviderAgentSkills"],
+  "properties": {
+    "schema": {"const": "road-provider-agent-skill-observation-v1"},
+    "observedAt": {"type": "string", "format": "date-time"},
+    "providers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["provider", "connectionState", "configuredAgentSkillCount", "status", "evidence", "note"],
+        "properties": {
+          "provider": {"type": "string"},
+          "connectionState": {"type": "string"},
+          "configuredAgentSkillCount": {"type": "integer", "minimum": 0},
+          "status": {"type": "string"},
+          "evidence": {"type": "string"},
+          "note": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "blackroadRepositoryProfiles": {"type": "integer", "minimum": 0},
+    "profilesAreProviderAgentSkills": {"type": "boolean"}
+  },
+  "additionalProperties": false
+}

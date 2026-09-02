@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/plugin-permission-policy/v1",
+  "title": "BlackRoad Plugin Permission Policy",
+  "type": "object",
+  "required": [
+    "schema",
+    "appliedToChatGPTSettings",
+    "defaultRecommendation",
+    "tiers",
+    "pluginOverrides",
+    "invariants"
+  ],
+  "properties": {
+    "schema": {
+      "const": "road-plugin-permission-policy-v1"
+    },
+    "appliedToChatGPTSettings": {
+      "type": "boolean"
+    },
+    "defaultRecommendation": {
+      "enum": [
+        "inherit",
+        "always_ask",
+        "ask_before_writes",
+        "review_important_actions",
+        "full_access"
+      ]
+    },
+    "rationale": {
+      "type": "string"
+    },
+    "allowedModes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "tiers": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "minItems": 1
+    },
+    "pluginOverrides": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "invariants": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false
+}

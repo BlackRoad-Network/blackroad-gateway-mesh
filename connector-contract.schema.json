@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/connector-contract/v1",
+  "title": "BlackRoad Connector Contract",
+  "type": "object",
+  "required": ["id", "capabilities", "authority", "operations"],
+  "properties": {
+    "id": {"type": "string"},
+    "capabilities": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "authority": {
+      "type": "object",
+      "required": ["read", "write", "admin", "secret"],
+      "properties": {
+        "read": {"type": "string"},
+        "write": {"type": "string"},
+        "admin": {"type": "string"},
+        "secret": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "operations": {
+      "type": "array",
+      "items": {"enum": ["discover", "health", "capabilities", "read", "write", "admin", "secret-reference"]},
+      "uniqueItems": true
+    }
+  },
+  "additionalProperties": false
+}

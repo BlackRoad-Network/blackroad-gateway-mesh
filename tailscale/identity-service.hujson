@@ -1,0 +1,12 @@
+{
+  // Candidate service config. Apply only after confirming a listener exists on 127.0.0.1:1729.
+  "version": "0.0.1",
+  "services": {
+    "svc:identity": {
+      "endpoints": {
+        "tcp:1729": "tcp://127.0.0.1:1729"
+      },
+      "advertised": true
+    }
+  }
+}
