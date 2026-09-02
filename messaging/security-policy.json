@@ -1,0 +1,43 @@
+{
+  "schema": "road-conversation-security-policy-v1",
+  "inboundTrust": "UNTRUSTED_CONTENT",
+  "rules": {
+    "providerEventAuthenticityRequired": true,
+    "messageTextNeverGrantsAuthority": true,
+    "mentionsCreateHandoffCandidatesOnly": true,
+    "senderAllowlistDoesNotGrantMutationAuthority": true,
+    "urlsAreNotAutoOpened": true,
+    "attachmentsDefaultToQuarantined": true,
+    "toolInstructionsInsideMessagesAreData": true,
+    "externalCommunicationStillRequiresUserApproval": true,
+    "administrationStillRequiresGovernance": true,
+    "contentStoredByReferenceAndHash": true,
+    "secretsRejectedFromControlState": true
+  },
+  "attachmentStates": [
+    "QUARANTINED_UNSCANNED",
+    "SCANNING",
+    "VERIFIED_SAFE",
+    "BLOCKED_MALICIOUS",
+    "UNSUPPORTED"
+  ],
+  "inboundActionStates": [
+    "OBSERVED",
+    "CLASSIFICATION_ALLOWED",
+    "HANDOFF_CANDIDATE",
+    "REVIEW_REQUIRED",
+    "BLOCKED",
+    "AUTHORIZED_BY_SEPARATE_INTENT"
+  ],
+  "automaticActions": {
+    "metadataNormalization": true,
+    "deduplication": true,
+    "safeClassification": true,
+    "handoffProposal": true,
+    "providerWrite": false,
+    "externalReply": false,
+    "secretAccess": false,
+    "attachmentExecution": false,
+    "urlNavigation": false
+  }
+}
