@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/messaging/command/v1",
+  "title": "BlackRoad Messaging Command",
+  "type": "object",
+  "required": [
+    "type",
+    "actorAgentId",
+    "sessionRef"
+  ],
+  "properties": {
+    "type": {
+      "enum": [
+        "thread.create",
+        "thread.bind",
+        "message.plan",
+        "provider.outcome",
+        "projection.verify",
+        "inbound.record",
+        "reaction.plan",
+        "thread.resolve"
+      ]
+    },
+    "actorAgentId": {
+      "type": "string",
+      "pattern": "^(connector-orchestrator|agent-instance-[1-6])$"
+    },
+    "sessionRef": {
+      "type": "string",
+      "minLength": 1
+    },
+    "threadId": {
+      "type": "string"
+    },
+    "messageId": {
+      "type": "string"
+    },
+    "projectionId": {
+      "type": "string"
+    },
+    "expectedThreadVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "idempotencyKey": {
+      "type": "string"
+    },
+    "userApprovalRef": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}
