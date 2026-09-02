@@ -1,0 +1,42 @@
+{
+  "schema": "road-messaging-integration-v1",
+  "service": "road://service/messaging",
+  "privateService": "svc:messaging",
+  "collaborationService": "road://service/collaboration",
+  "branch": "gateway-messaging-v2",
+  "ownedPaths": [
+    "SPEC.md",
+    "MESSAGING-FRAMEWORK.md",
+    "messaging/**",
+    "skills/road-messaging/**",
+    "bin/road-messaging",
+    "bin/road-messagingd",
+    "bin/road-messaging-mcp",
+    "mcp/claude/road-messaging.json",
+    "scripts/install-road-messaging.sh",
+    ".github/workflows/messaging-framework.yml"
+  ],
+  "mustNotEdit": [
+    "collaboration/core.mjs",
+    "collaboration/daemon.mjs",
+    "collaboration/mcp-server.mjs",
+    "collaboration/protocol.json"
+  ],
+  "requirements": {
+    "outboundCommunication": [
+      "collaboration-intent",
+      "exclusive-claim",
+      "user-approval-reference",
+      "provider-native-call",
+      "read-after-write-verification",
+      "receipt"
+    ],
+    "providerSecrets": "provider-native-only",
+    "publicExposure": "not-authorized"
+  },
+  "providerStatus": {
+    "slack": "CONNECTED",
+    "github": "CONNECTED",
+    "microsoft-teams": "CONNECTOR_UNAVAILABLE"
+  }
+}
