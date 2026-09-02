@@ -1,0 +1,25 @@
+{
+  "schema": "road-messaging-example-v1",
+  "thread": {
+    "ownerAgentId": "agent-instance-4",
+    "title": "Gateway rollout discussion",
+    "resourceKey": "road://service/gateway",
+    "visibility": "INTERNAL",
+    "idempotencyKey": "thread:gateway-rollout"
+  },
+  "binding": {
+    "provider": "slack",
+    "providerThreadRef": "slack://workspace/channel/CHANNEL/thread/TIMESTAMP",
+    "providerLocator": {
+      "channelId": "CHANNEL",
+      "threadTs": "TIMESTAMP"
+    },
+    "mode": "PROJECTION",
+    "visibility": "EXTERNAL"
+  },
+  "message": {
+    "body": "Gateway verification completed.",
+    "idempotencyKey": "message:gateway-rollout:verified",
+    "userApprovalRef": "approval://current-user-request"
+  }
+}
