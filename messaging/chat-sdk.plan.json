@@ -1,0 +1,73 @@
+{
+  "schema": "road-chat-sdk-adapter-plan-v1",
+  "source": "installed Vercel chat-sdk skill and published-package contract",
+  "core": "chat",
+  "stateOptions": [
+    {
+      "package": "@chat-adapter/state-memory",
+      "use": "development and deterministic local tests"
+    },
+    {
+      "package": "@chat-adapter/state-redis",
+      "use": "shared production state"
+    },
+    {
+      "package": "@chat-adapter/state-ioredis",
+      "use": "existing ioredis deployments"
+    },
+    {
+      "package": "@chat-adapter/state-pg",
+      "use": "PostgreSQL-backed state"
+    }
+  ],
+  "platforms": [
+    {
+      "provider": "slack",
+      "package": "@chat-adapter/slack",
+      "factory": "createSlackAdapter",
+      "status": "CONNECTED_TOOL_AVAILABLE_CHAT_SDK_OPTIONAL"
+    },
+    {
+      "provider": "microsoft-teams",
+      "package": "@chat-adapter/teams",
+      "factory": "createTeamsAdapter",
+      "status": "AUTH_AND_WEBHOOK_CONFIG_REQUIRED"
+    },
+    {
+      "provider": "google-chat",
+      "package": "@chat-adapter/gchat",
+      "factory": "createGoogleChatAdapter",
+      "status": "AUTH_AND_WEBHOOK_CONFIG_REQUIRED"
+    },
+    {
+      "provider": "discord",
+      "package": "@chat-adapter/discord",
+      "factory": "createDiscordAdapter",
+      "status": "AUTH_AND_WEBHOOK_CONFIG_REQUIRED"
+    },
+    {
+      "provider": "github",
+      "package": "@chat-adapter/github",
+      "factory": "createGitHubAdapter",
+      "status": "CONNECTED_TOOL_AVAILABLE_CHAT_SDK_OPTIONAL"
+    },
+    {
+      "provider": "linear",
+      "package": "@chat-adapter/linear",
+      "factory": "createLinearAdapter",
+      "status": "CONNECTED_TOOL_AVAILABLE_CHAT_SDK_OPTIONAL"
+    },
+    {
+      "provider": "telegram",
+      "package": "@chat-adapter/telegram",
+      "factory": "createTelegramAdapter",
+      "status": "AUTH_AND_WEBHOOK_CONFIG_REQUIRED"
+    },
+    {
+      "provider": "whatsapp",
+      "package": "@chat-adapter/whatsapp",
+      "factory": "createWhatsAppAdapter",
+      "status": "AUTH_AND_WEBHOOK_CONFIG_REQUIRED"
+    }
+  ]
+}
