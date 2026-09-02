@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration-notification/v1",
+  "title": "BlackRoad Collaboration Notification",
+  "type": "object",
+  "required": ["id", "toAgentId", "kind", "subjectRef", "state", "idempotencyKey", "createdAt", "updatedAt"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "toAgentId": { "type": "string", "pattern": "^(connector-orchestrator|agent-instance-[1-6])$" },
+    "fromAgentId": { "type": ["string", "null"], "pattern": "^(connector-orchestrator|agent-instance-[1-6])$" },
+    "kind": { "enum": ["WORK_READY", "DELEGATION_REQUESTED", "DELEGATION_RESOLVED", "HANDOFF", "CONFLICT", "DRIFT", "VERIFICATION_REQUIRED", "GENERAL"] },
+    "subjectRef": { "type": "string", "minLength": 1 },
+    "summary": { "type": "string", "maxLength": 1000 },
+    "state": { "enum": ["PENDING", "DELIVERED", "ACKNOWLEDGED", "EXPIRED"] },
+    "idempotencyKey": { "type": "string", "minLength": 1 },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "deliveredAt": { "type": ["string", "null"] },
+    "acknowledgedAt": { "type": ["string", "null"] },
+    "acknowledgedBySessionRef": { "type": ["string", "null"] }
+  },
+  "additionalProperties": false
+}

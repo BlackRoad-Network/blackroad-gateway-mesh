@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration-delegation/v1",
+  "title": "BlackRoad Work Delegation",
+  "type": "object",
+  "required": ["id", "workItemId", "fromAgentId", "toAgentId", "contractRef", "state", "createdAt", "updatedAt"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "workItemId": { "type": "string", "minLength": 1 },
+    "workflowId": { "type": "string", "minLength": 1 },
+    "fromAgentId": { "type": "string", "pattern": "^(connector-orchestrator|agent-instance-[1-6])$" },
+    "fromSessionRef": { "type": "string", "minLength": 1 },
+    "toAgentId": { "type": "string", "pattern": "^(connector-orchestrator|agent-instance-[1-6])$" },
+    "toSessionRef": { "type": ["string", "null"] },
+    "contractRef": { "type": "string", "minLength": 1 },
+    "acceptanceRefs": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "state": { "enum": ["OPEN", "ACCEPTED", "REJECTED", "CANCELLED", "COMPLETED"] },
+    "resultRef": { "type": ["string", "null"] },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "resolvedAt": { "type": ["string", "null"] }
+  },
+  "additionalProperties": false
+}
