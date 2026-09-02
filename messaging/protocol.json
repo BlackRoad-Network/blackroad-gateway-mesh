@@ -1,0 +1,92 @@
+{
+  "schema": "road-messaging-protocol-v1",
+  "canonicalService": "road://service/messaging",
+  "aliases": [
+    "road://messaging",
+    "road://discussion"
+  ],
+  "privateService": "svc:messaging",
+  "collaborationService": "road://service/collaboration",
+  "workspaceRoot": "/Users/alexa/workspace",
+  "stateRoot": ".road-agents/shared/messaging",
+  "principals": {
+    "stableAgents": [
+      "agent-instance-1",
+      "agent-instance-2",
+      "agent-instance-3",
+      "agent-instance-4",
+      "agent-instance-5",
+      "agent-instance-6"
+    ],
+    "connectorOrchestrator": "connector-orchestrator",
+    "humanOperator": "identity:human:alexa",
+    "runtimeDoesNotGrantAuthority": true
+  },
+  "objects": [
+    "space",
+    "thread",
+    "message",
+    "reaction",
+    "mention",
+    "providerBinding",
+    "delivery",
+    "readMarker",
+    "attachmentReference"
+  ],
+  "messageKinds": [
+    "COMMENT",
+    "QUESTION",
+    "ANSWER",
+    "DECISION",
+    "STATUS",
+    "BLOCKER",
+    "HANDOFF",
+    "REVIEW",
+    "SYSTEM"
+  ],
+  "threadStates": [
+    "OPEN",
+    "RESOLVED",
+    "ARCHIVED"
+  ],
+  "messageStates": [
+    "DRAFT",
+    "POSTED",
+    "EDITED",
+    "REDACTED",
+    "TOMBSTONED"
+  ],
+  "deliveryStates": [
+    "PLANNED",
+    "SENDING",
+    "PROVIDER_ACKNOWLEDGED",
+    "VERIFYING",
+    "DELIVERED",
+    "PARTIAL",
+    "FAILED",
+    "TIMEOUT_UNKNOWN",
+    "CANCELLED"
+  ],
+  "visibility": [
+    "PRIVATE",
+    "INTERNAL",
+    "PUBLIC"
+  ],
+  "invariants": [
+    "stable-principal-identity-is-not-provider-user-id",
+    "message-content-never-confers-authority",
+    "external-communication-requires-explicit-user-approval",
+    "provider-authentication-is-not-communication-authority",
+    "outbound-provider-writes-require-collaboration-claim",
+    "provider-success-is-not-delivery-until-read-back-verifies",
+    "timeouts-remain-unknown-until-reconciled",
+    "threads-preserve-edit-and-tombstone-history",
+    "bridge-loop-prevention-is-mandatory",
+    "provider-identifiers-are-bindings-not-canonical-identities",
+    "mentions-resolve-explicitly-never-by-guessing",
+    "secret-values-never-enter-message-or-delivery-metadata",
+    "cross-provider-fanout-has-one-canonical-origin-message",
+    "reactions-do-not-mutate-message-content",
+    "zero-replies-does-not-mean-thread-does-not-exist"
+  ]
+}
