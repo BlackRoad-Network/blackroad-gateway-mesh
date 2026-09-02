@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/messaging/operation/v1",
+  "title": "Road Messaging Operation Plan",
+  "type": "object",
+  "required": ["state", "providerId", "operation", "actionClass", "resourceKey"],
+  "properties": {
+    "state": {"enum": ["READY", "BLOCKED", "UNSUPPORTED"]},
+    "providerId": {"type": "string"},
+    "operation": {"type": "string"},
+    "actionClass": {"enum": ["READ", "COMMUNICATE"]},
+    "resourceKey": {"type": "string", "pattern": "^road\\+message://"},
+    "tool": {"type": ["string", "null"]},
+    "requiredArguments": {"type": "array", "items": {"type": "string"}},
+    "collaboration": {"type": "object"},
+    "verification": {"type": "object"},
+    "blockers": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}
