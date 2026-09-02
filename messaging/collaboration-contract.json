@@ -1,0 +1,62 @@
+{
+  "schema": "road-messaging-collaboration-contract-v1",
+  "service": "road://service/messaging",
+  "collaborationService": "road://service/collaboration",
+  "inbound": {
+    "classification": "OBSERVE",
+    "requiresExclusiveClaim": false,
+    "requiresUserApproval": false,
+    "requirements": [
+      "provider-event-id-or-stable-read-version",
+      "canonical-resource-key",
+      "source-principal-binding",
+      "dedupe-key",
+      "sanitized-content"
+    ]
+  },
+  "outbound": {
+    "classification": "COMMUNICATE",
+    "requiresExclusiveClaim": true,
+    "requiresUserApproval": true,
+    "requirements": [
+      "live-session-ref",
+      "target-owner-agent",
+      "connector-id",
+      "canonical-resource-key",
+      "semantic-idempotency-key",
+      "request-hash",
+      "user-approval-ref",
+      "provider-native-tool",
+      "read-after-write-verification",
+      "receipt"
+    ],
+    "lifecycle": [
+      "intent.create",
+      "claim.acquire",
+      "intent.executing",
+      "invocation.start",
+      "provider-native-call",
+      "invocation.finish",
+      "verification.record",
+      "receipt.record",
+      "claim.release"
+    ]
+  },
+  "timeout": {
+    "state": "TIMEOUT_UNKNOWN",
+    "retryRule": "read-provider-before-retry",
+    "sameIdempotencyKeyRequired": true
+  },
+  "handoff": {
+    "requiredFields": [
+      "fromAgentId",
+      "toAgentId",
+      "threadId",
+      "messageId",
+      "resourceKey",
+      "evidenceRefs",
+      "requestedNextAction"
+    ],
+    "recipientAcknowledgementRequired": true
+  }
+}

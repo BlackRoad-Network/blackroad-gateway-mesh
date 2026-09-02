@@ -1,0 +1,20 @@
+{
+  "schema": "road-messaging-live-proof-v1",
+  "provider": "github",
+  "status": "VERIFIED",
+  "performedAt": "2026-09-02T19:57:14Z",
+  "verifiedAt": "2026-09-02T20:04:00Z",
+  "actionClass": "COMMUNICATE",
+  "userApprovalRef": "conversation:user:keep-her-going",
+  "targetOwnerAgent": "agent-instance-4",
+  "actor": "connector-orchestrator",
+  "resource": "BlackRoad-Network/blackroad-gateway-mesh#9",
+  "commentRefHash": "b1dad2839edf879872a4d388ed36471ed641b74c1c1e93b8040c571e607ff820",
+  "permalinkHash": "62219bd90efd57a35137de5c6d7af5880d9721bf388f43e2807d4b356a15cf40",
+  "bodyHash": "b5ccd6faaf10c96c4460a81f154e18d1dc24f2a7d8f79a811cfdc5a3341ab5b4",
+  "commentsReadBack": 1,
+  "bodyVerification": "MATCHED",
+  "secretValuesPersisted": false,
+  "providerIdentifiersPublished": false,
+  "relatedPublicPullRequest": "BlackRoad-Network/blackroad-gateway-mesh#9"
+}

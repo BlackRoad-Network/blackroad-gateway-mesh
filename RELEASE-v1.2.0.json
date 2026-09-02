@@ -1,0 +1,62 @@
+{
+  "schema": "road-messaging-release-v1",
+  "version": "1.2.0",
+  "protocol": "road-messaging/1.2",
+  "releasedAt": "2026-09-02T19:43:29Z",
+  "canonicalService": "road://service/messaging",
+  "privateService": "svc:messaging",
+  "repository": "BlackRoad-Network/blackroad-gateway-mesh",
+  "branch": "gateway-messaging-v2",
+  "pullRequest": 9,
+  "baseBranch": "gateway-collaboration-v1",
+  "providers": 12,
+  "observedProviderSurfaces": 12,
+  "connectedToolProviders": 6,
+  "writableObservedProviders": 2,
+  "readOnlyObservedProviders": 4,
+  "chatSdkProviders": 5,
+  "schemas": 7,
+  "mcpTools": 15,
+  "tests": {
+    "total": 33,
+    "passed": 33,
+    "failed": 0,
+    "skipped": 0
+  },
+  "liveProof": {
+    "provider": "slack",
+    "parentMessages": 1,
+    "threadReplies": 1,
+    "readBackMessages": 2,
+    "status": "VERIFIED",
+    "publicProof": "messaging/live-proofs/slack-thread-proof.public.json",
+    "providerIdentifiersPublished": false
+  },
+  "providerTruth": {
+    "slack": "READ_WRITE_DISCUSSION",
+    "github": "READ_WRITE_DISCUSSION",
+    "linear": "READ_ONLY",
+    "notion": "READ_ONLY",
+    "asana": "READ_ONLY",
+    "airtable": "READ_ONLY",
+    "microsoft-teams": "ADAPTER_PLAN_ONLY_NOT_CONNECTED"
+  },
+  "safety": {
+    "providerAuthenticationIsNotAuthority": true,
+    "externalCommunicationRequiresUserApproval": true,
+    "providerWritesRequireReadAfterWriteVerification": true,
+    "timeoutsRemainUnknown": true,
+    "bidirectionalBridgesDefaultDisabled": true,
+    "secretValuesPersisted": false,
+    "publicDeploymentPerformed": false,
+    "tailscaleMutationPerformed": false,
+    "neuraStopBypassed": false
+  },
+  "ciBranch": "gateway-messaging-v2",
+  "archive": {
+    "name": "blackroad-messaging-framework-v1.2.0.tar.gz",
+    "sha256": "852dbb261fde331c6e3149e16642c5ae4c121ec831b9d6cbdbbc54ae95a3b0bd",
+    "publicRepositoryAttachment": false,
+    "reason": "binary release retained as a verified conversation artifact; public branch contains source, validation, and checksum metadata"
+  }
+}
