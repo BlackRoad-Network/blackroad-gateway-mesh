@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration/workflow-receipt/v1",
+  "title": "BlackRoad Connector Workflow Receipt",
+  "type": "object",
+  "required": ["schema", "workflowId", "correlationId", "complete", "state", "receipts", "completedAt", "secretValuesPersisted"],
+  "properties": {
+    "schema": {"const": "road-connector-workflow-receipt-v1"},
+    "workflowId": {"type": "string", "minLength": 1},
+    "correlationId": {"type": "string", "minLength": 1},
+    "complete": {"type": "boolean"},
+    "state": {"enum": ["SUCCEEDED", "INCOMPLETE_OR_BLOCKED"]},
+    "receipts": {"type": "array", "items": {"type": "object", "required": ["stepId", "receipt"]}},
+    "completedAt": {"type": "string", "format": "date-time"},
+    "secretValuesPersisted": {"const": false}
+  },
+  "additionalProperties": true
+}
