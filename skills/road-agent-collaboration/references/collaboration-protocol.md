@@ -70,3 +70,11 @@ Before any externally consequential connector write, an agent should be able to 
 5. What read-back evidence will prove the effect?
 
 If one of those answers is missing, the collaboration layer is not ready for the mutation.
+
+## Unknown connectors and conservative defaults
+
+An installed connector may appear before a BlackRoad-specific stewardship rule exists. Discovery must still work, otherwise registration becomes impossible. Therefore the fallback permits reads from any registered agent, but it does not grant universal mutation authority. Unknown-provider mutations are restricted to the connector orchestrator and integrations steward (`agent-instance-4`), and every mutating class is governance-gated, user-approval-gated, and requires integrations-steward participation. Once the connector receives an explicit reviewed rule, that provider-specific contract replaces the conservative fallback. Missing policy is never interpreted as broad permission.
+
+## Session continuity
+
+The logical agent name is not sufficient proof that the same runtime is still performing a mutation. A mutating intent records the exact live `sessionRef`. Approval records that represent agent participation require a live session for the approving agent. The mutation claim, transition to execution, provider invocation, provider result, read-after-write verification, and final receipt must preserve session continuity. Another Claude session using the same logical `agent-instance-N` cannot inherit this authority merely because it shares the role name. If the session becomes stale or closes before the provider operation starts, the mutation stops before provider execution and must be resumed through an explicit reconciliation path rather than silently reassigned.
