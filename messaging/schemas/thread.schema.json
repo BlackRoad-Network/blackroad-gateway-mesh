@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/messaging/thread/v1",
+  "title": "BlackRoad Messaging Thread",
+  "type": "object",
+  "required": [
+    "id",
+    "uri",
+    "ownerAgentId",
+    "title",
+    "resourceKey",
+    "visibility",
+    "state",
+    "version",
+    "bindingIds",
+    "messageIds",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^thread_"
+    },
+    "uri": {
+      "type": "string",
+      "pattern": "^road://thread/"
+    },
+    "ownerAgentId": {
+      "type": "string",
+      "pattern": "^(connector-orchestrator|agent-instance-[1-6])$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "resourceKey": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "visibility": {
+      "enum": [
+        "INTERNAL",
+        "EXTERNAL",
+        "PUBLIC"
+      ]
+    },
+    "state": {
+      "enum": [
+        "OPEN",
+        "RESOLVED",
+        "ARCHIVED",
+        "LOCKED"
+      ]
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "participantRefs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "bindingIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "messageIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "authoritativeBindingId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "resolvedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "resolutionRef": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": true
+}
