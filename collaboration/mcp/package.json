@@ -1,0 +1,13 @@
+{
+  "name": "@blackroad/collaboration-mcp",
+  "version": "0.10.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "verify": "node --check server.mjs && node --check lib/store.mjs && node --check lib/broker.mjs && npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
