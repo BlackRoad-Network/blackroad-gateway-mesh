@@ -1,0 +1,43 @@
+{
+  "schema": "road-agent-collaboration-protocol-v2",
+  "canonicalId": "road://service/collaboration",
+  "aliases": ["road://collaboration"],
+  "tailscaleService": "svc:collaboration",
+  "heartbeatTtlSeconds": 180,
+  "store": {
+    "primary": "netlify-blobs:road-agent-collaboration/state",
+    "localMirror": "/Users/alexa/workspace/.road-agents/shared/collaboration",
+    "sourceMirror": "git://BlackRoad-Network/blackroad-gateway-mesh"
+  },
+  "actionClasses": ["OBSERVE","READ","WRITE","COMMUNICATE","DEPLOY","ADMIN","SECRET","PUBLIC_EXPOSE"],
+  "lifecycles": {
+    "intent": ["PROPOSED","WAITING_DEPENDENCIES","BLOCKED_DEPENDENCY","WAITING_PARTICIPANTS","BLOCKED_GOVERNANCE","BLOCKED_USER_APPROVAL","READY_TO_CLAIM","CLAIMED","EXECUTING","SUCCEEDED","FAILED","TIMEOUT_UNKNOWN","BLOCKED","PARTIAL","CANCELLED"],
+    "claim": ["ACTIVE","RELEASED","EXPIRED","COMPLETED"],
+    "handoff": ["OPEN","ACKNOWLEDGED","COMPLETED","REJECTED"],
+    "observation": ["CURRENT","STALE"],
+    "session": ["ONLINE","STALE","CLOSED"],
+    "invocation": ["STARTED","PROVIDER_ACKNOWLEDGED","VERIFYING","VERIFIED","VERIFICATION_FAILED","FAILED","TIMEOUT_UNKNOWN","BLOCKED","PARTIAL","CANCELLED"],
+    "workflow": ["ACTIVE","BLOCKED","PARTIAL","SUCCEEDED","FAILED","CANCELLED"]
+  },
+  "invariants": [
+    "agent-identity-is-not-model-provider",
+    "connector-authentication-is-not-action-authority",
+    "one-active-exclusive-mutation-per-agent",
+    "one-active-exclusive-claim-per-resource",
+    "reads-may-overlap-writes-may-not",
+    "mutations-require-idempotency-keys",
+    "sensitive-actions-require-governance-receipts",
+    "external-communications-require-user-approval",
+    "secret-values-never-enter-collaboration-state",
+    "timeouts-remain-unknown-not-failed",
+    "all-state-transitions-are-hash-chained",
+    "cross-connector-workflows-declare-dependencies",
+    "observations-preserve-source-and-uncertainty",
+    "connector-execution-remains-provider-native",
+    "connector-invocations-are-durable-first-class-records",
+    "provider-writes-require-read-after-write-verification",
+    "agent-sessions-are-distinct-from-agent-identities",
+    "stale-resource-versions-block-mutations",
+    "workflow-causality-and-compensation-are-explicit"
+  ]
+}
