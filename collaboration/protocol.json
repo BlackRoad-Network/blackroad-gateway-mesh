@@ -38,6 +38,8 @@
     "provider-writes-require-read-after-write-verification",
     "agent-sessions-are-distinct-from-agent-identities",
     "stale-resource-versions-block-mutations",
-    "workflow-causality-and-compensation-are-explicit"
+    "workflow-causality-and-compensation-are-explicit",
+    "unregistered-connector-mutations-use-restrictive-default-policy",
+    "mutating-intents-are-bound-to-one-live-runtime-session"
   ]
 }
