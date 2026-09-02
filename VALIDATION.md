@@ -7,6 +7,9 @@
 - `tailscale-services.plan.json`: JSON parse OK.
 - `neura/gateway-passport-request.json`: JSON parse OK.
 - `netlify/edge-functions/gateway.ts`: `tsc --noEmit` passed with a minimal Netlify-compatible type stub.
+- `bin/road-gateway`: `bash -n` passed and `--help` executes.
+- `scripts/gateway-doctor.sh`: `bash -n` passed.
+- `scripts/tailscale-activate-identity.sh`: `bash -n` passed locally before commit.
 - Status normalization cases passed locally for:
   - READY
   - CONNECTED
@@ -21,6 +24,7 @@
   - LIMIT_REQUIRED
   - UNVERIFIED
   - LOCAL_BRIDGE
+- HTTP handler runtime tests passed for gateway manifest, service list, health, capabilities, known-service lookup, timeout preservation, and unknown-service 404 behavior.
 
 ## External state verified
 
@@ -29,6 +33,8 @@
 - `BlackRoad-Network/blackroad-gateway-mesh` is non-archived and writable through the connected GitHub installation.
 - Tailscale configuration has **not** been modified from this environment.
 - Public Netlify deployment has **not** been triggered after Neura returned STOP.
+- DigitalOcean `codex-infinity` and `shellfish-droplet` are active compute nodes; neither is claimed as a gateway host until transport/listener verification succeeds.
+- BlackRoad OS PostHog currently has no managed reverse proxy configured.
 
 ## Governance receipts
 
