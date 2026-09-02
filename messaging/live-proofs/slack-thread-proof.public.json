@@ -1,0 +1,19 @@
+{
+  "schema": "road-messaging-live-proof-v1",
+  "provider": "slack",
+  "status": "VERIFIED",
+  "performedAt": "2026-09-02T21:35:30Z",
+  "actionClass": "COMMUNICATE",
+  "userApprovalRef": "conversation:user:keep-her-going",
+  "targetOwnerAgent": "agent-instance-4",
+  "actor": "connector-orchestrator",
+  "parentMessageRefHash": "fc8b400d24e0278dfe05b7e7c8c67bc12cca6bff63964ebed71af4dd1b8b5c24",
+  "replyMessageRefHash": "97d24caae36fc8f442807cfec777180165b911ffbeeca9c82c89dabadf29adcf",
+  "conversationRefHash": "c0a64f7a5cdd65781eefe880c10df2dc1bcfd93ea5c5c3bd029f1560ceee7683",
+  "messagesReadBack": 2,
+  "threadRepliesReadBack": 1,
+  "bodyVerification": "MATCHED",
+  "secretValuesPersisted": false,
+  "providerIdentifiersPublished": false,
+  "relatedPublicPullRequest": "BlackRoad-Network/blackroad-gateway-mesh#9"
+}
