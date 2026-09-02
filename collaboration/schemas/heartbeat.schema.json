@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration/heartbeat/v1",
+  "title": "BlackRoad Agent Heartbeat",
+  "type": "object",
+  "required": ["schema", "heartbeatId", "agentId", "sessionId", "ttlSeconds", "authorityGrantedByHeartbeat", "secretValuesPersisted", "eventHash"],
+  "properties": {
+    "schema": {"const": "road-agent-heartbeat-v1"},
+    "heartbeatId": {"type": "string", "pattern": "^heartbeat_"},
+    "agentId": {"type": "string", "pattern": "^agent-instance-[1-6]$"},
+    "sessionId": {"type": "string", "minLength": 1},
+    "runtime": {"type": ["string", "null"]},
+    "model": {"type": ["string", "null"]},
+    "activeClaimRefs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "workflowRefs": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "ttlSeconds": {"type": "integer", "minimum": 10, "maximum": 3600},
+    "authorityGrantedByHeartbeat": {"const": false},
+    "secretValuesPersisted": {"const": false},
+    "previousHash": {"type": ["string", "null"]},
+    "eventHash": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  },
+  "additionalProperties": true
+}
