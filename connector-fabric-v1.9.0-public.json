@@ -1,0 +1,17 @@
+{
+  "schema": "road-messaging-public-connector-fabric-v1",
+  "version": "1.9.0",
+  "total": 62,
+  "roles": {
+    "control": ["adapter-plane","appdeploy","base44","blackroad-ai-gateway","collaboration","dataverse","digitalocean-codex-infinity","digitalocean-shellfish","gitbook","godaddy","google-calendar","hugging-face","jotform","microsoft-sharepoint","netlify-network-atlas","nvidia","openai-platform","plugin-registry","posthog","proxyman","quicknode","railway-api","railway-cloud","railway-core","railway-orchestrator","railway-roadie","skill-registry","stripe","supabase","tailscale-aperture","tailscale-services","vercel-context-bridge","vercel-infra","webhook-gateway","workos","zoho-crm","zzzops"],
+    "decision": ["neura-relay"],
+    "event": ["amplitude","fireflies","granola","gsc-wizard","meetgeek","search","semrush","windsor-ai","zoom"],
+    "delivery": ["calendly","docusign","gmail","pandadoc","resend","retell-ai"],
+    "reference-only": ["1password"],
+    "discussion": ["airtable","asana","github","google-drive","linear","notion","slack","webflow"]
+  },
+  "nativeDiscussion": ["slack","github","linear","airtable","notion","google-drive","asana","webflow"],
+  "nativeDelivery": ["gmail","resend","docusign","pandadoc","calendly","retell-ai"],
+  "invariants": ["unknown-connectors-fail-restrictive","external-communication-requires-explicit-user-approval","control-and-decision-mutations-require-governance","provider-mutations-require-exclusive-claim","provider-success-requires-read-after-write-verification","secret-values-never-enter-fabric"],
+  "artifact": {"name":"blackroad-messaging-framework-v1.9.0.tar.gz","sha256":"95c73e62d683d6e2024a04b56da715305566c75d9b07b0c045b43b3820a3e697","tests":118,"failed":0}
+}
