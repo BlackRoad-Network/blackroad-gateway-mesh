@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { capabilitiesFor } from './capabilities.mjs';
 
 const catalogUrl = new URL('../data/connector-fabric.json', import.meta.url);
 const VALID_ROLES = new Set(['discussion', 'delivery', 'event', 'control', 'decision', 'reference-only']);
@@ -20,7 +21,7 @@ export async function loadFabric() {
         detail: 'Contract exists; live provider state has not been observed.'
       };
       if (!VALID_STATES.has(observation.state)) throw new Error(`invalid connector state for ${id}: ${observation.state}`);
-      connectors.push({ id, role, ...observation, observedVia: sourceId });
+      connectors.push({ id, role, capabilities: capabilitiesFor(role), ...observation, observedVia: sourceId });
     }
   }
 
