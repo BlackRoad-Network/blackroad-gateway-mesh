@@ -3,6 +3,7 @@ import { loadFabric } from '../src/catalog.mjs';
 import { planConnectorAction } from '../src/planner.mjs';
 import { ConnectorRuntime } from '../src/runtime.mjs';
 import { auditConnectors } from '../src/audit.mjs';
+import { routeTask, validateRoutingProfiles } from '../src/router.mjs';
 
 const [command = 'status', ...args] = process.argv.slice(2);
 
@@ -37,11 +38,18 @@ if (command === 'list') {
   const concurrency = concurrencyFlag ? Number(concurrencyFlag.slice(14)) : 4;
   const runtime = new ConnectorRuntime();
   console.log(JSON.stringify(await auditConnectors({ runtime, concurrency }), null, 2));
+} else if (command === 'route') {
+  const [task, operation = 'read', ...flags] = args;
+  if (!task) throw new Error('usage: road-connectors route <task> <read|write> [--preferred=connector]');
+  const preferredFlag = flags.find((flag) => flag.startsWith('--preferred='));
+  console.log(JSON.stringify(await routeTask({ task, operation, preferred: preferredFlag?.slice(12) ?? null }), null, 2));
 } else if (command === 'check') {
   const fabric = await loadFabric();
   const badRoles = fabric.connectors.filter(({ role }) => !['discussion', 'delivery', 'event', 'control', 'decision', 'reference-only'].includes(role));
   if (badRoles.length) throw new Error(`invalid roles: ${badRoles.map(({ id }) => id).join(', ')}`);
-  console.log(`connector fabric ${fabric.version}: ${fabric.connectors.length} contracts valid`);
+  const routing = await validateRoutingProfiles();
+  if (!routing.valid) throw new Error(`invalid routing profiles: ${routing.errors.join('; ')}`);
+  console.log(`connector fabric ${fabric.version}: ${fabric.connectors.length} contracts and ${routing.profiles} routes valid`);
 } else {
   throw new Error(`unknown command: ${command}`);
 }
