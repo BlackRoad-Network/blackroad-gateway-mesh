@@ -1,7 +1,20 @@
 {
   "name": "blackroad-plugin-gateway",
+  "version": "1.9.1",
   "private": true,
+  "type": "module",
+  "bin": {
+    "road-connectors": "./bin/road-connectors.mjs"
+  },
+  "scripts": {
+    "check": "node bin/road-connectors.mjs check",
+    "test": "node --test test/*.test.mjs",
+    "verify": "npm run check && npm test"
+  },
   "dependencies": {
     "@netlify/edge-functions": "latest"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
