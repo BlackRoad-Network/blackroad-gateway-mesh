@@ -6,6 +6,12 @@
   "bin": {
     "road-connectors": "./bin/road-connectors.mjs"
   },
+  "exports": {
+    ".": "./src/runtime.mjs",
+    "./catalog": "./src/catalog.mjs",
+    "./planner": "./src/planner.mjs",
+    "./capabilities": "./src/capabilities.mjs"
+  },
   "scripts": {
     "check": "node bin/road-connectors.mjs check",
     "test": "node --test test/*.test.mjs",
