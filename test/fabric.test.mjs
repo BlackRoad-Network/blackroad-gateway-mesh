@@ -3,6 +3,10 @@ import test from 'node:test';
 import { getConnector, loadFabric } from '../src/catalog.mjs';
 import { planConnectorAction } from '../src/planner.mjs';
 import { ConnectorRuntime } from '../src/runtime.mjs';
+import { AdapterRegistry, defineAdapter, inspectAdapter } from '../src/adapter-sdk.mjs';
+import { auditConnectors, diffHealthSnapshots } from '../src/audit.mjs';
+import { ReceiptChain } from '../src/receipt-chain.mjs';
+import { createReceipt } from '../src/receipt.mjs';
 
 test('contains exactly 62 uniquely classified connectors', async () => {
   const fabric = await loadFabric();
@@ -141,4 +145,98 @@ test('probe failures expose an error class but not provider error contents', asy
   assert.equal(probe.reachable, false);
   assert.equal(probe.detail, 'Error');
   assert.ok(!JSON.stringify(probe).includes('secret'));
+});
+
+test('adapter SDK enforces write verification and duplicate ownership', () => {
+  assert.throws(() => defineAdapter({ id: 'slack', operations: ['write'], execute: async () => {} }), /must implement/);
+  const adapter = defineAdapter({
+    id: 'slack',
+    operations: ['read', 'write'],
+    execute: async () => ({}),
+    verify: async () => ({ ok: true })
+  });
+  const registry = new AdapterRegistry([adapter]);
+  assert.throws(() => registry.register('slack', adapter), /already registered/);
+  assert.deepEqual(registry.list(), ['slack']);
+});
+
+test('adapter inspection rejects capabilities beyond the connector role', async () => {
+  const zoom = await getConnector('zoom');
+  const result = inspectAdapter({ operations: ['write'], execute: async () => {}, verify: async () => ({ ok: true }) }, zoom);
+  assert.equal(result.valid, false);
+  assert.ok(result.errors.includes('operation-exceeds-contract'));
+});
+
+test('provider aliases resolve one registered adapter for multiple contracts', async () => {
+  const adapter = defineAdapter({ id: 'railway-api', execute: async () => ({ projects: [] }) });
+  const runtime = new ConnectorRuntime({ adapters: new AdapterRegistry([adapter]) });
+  const outcome = await runtime.execute({ id: 'railway-cloud', operation: 'read', dryRun: false });
+  assert.equal(outcome.receipt.status, 'succeeded');
+});
+
+test('runtime refuses operations omitted from an adapter declaration', async () => {
+  let calls = 0;
+  const adapter = defineAdapter({ id: 'slack', operations: ['read'], execute: async () => { calls += 1; } });
+  const runtime = new ConnectorRuntime({ adapters: [adapter] });
+  const denied = await planConnectorAction('slack', 'write');
+  const evidence = Object.fromEntries(denied.requirements.map((requirement) => [requirement, true]));
+  const outcome = await runtime.execute({ id: 'slack', operation: 'write', evidence, dryRun: false });
+  assert.equal(outcome.receipt.reason, 'adapter-operation-not-supported');
+  assert.equal(calls, 0);
+});
+
+test('fleet audit respects its concurrency bound and canonical input order', async () => {
+  let active = 0;
+  let maximum = 0;
+  const runtime = {
+    async probe(id) {
+      active += 1;
+      maximum = Math.max(maximum, active);
+      await new Promise((resolve) => setImmediate(resolve));
+      active -= 1;
+      return { id, reachable: true, state: 'ready' };
+    }
+  };
+  const ids = ['slack', 'github', 'linear', 'notion', 'airtable'];
+  const snapshot = await auditConnectors({ runtime, ids, concurrency: 2, clock: () => '2026-09-08T10:00:00.000Z' });
+  assert.equal(maximum, 2);
+  assert.deepEqual(snapshot.results.map(({ id }) => id), ids);
+  assert.equal(snapshot.healthy, 5);
+});
+
+test('health diffs distinguish recovery and degradation', () => {
+  const before = { checkedAt: 'before', results: [
+    { id: 'stripe', state: 'broken', reachable: false },
+    { id: 'github', state: 'ready', reachable: true }
+  ] };
+  const after = { checkedAt: 'after', results: [
+    { id: 'stripe', state: 'ready', reachable: true },
+    { id: 'github', state: 'broken', reachable: false }
+  ] };
+  const diff = diffHealthSnapshots(before, after);
+  assert.equal(diff.recovered, 1);
+  assert.equal(diff.degraded, 1);
+  assert.equal(diff.changed, 2);
+});
+
+test('receipt chain verifies intact history and detects tampering', () => {
+  const chain = new ReceiptChain();
+  const first = createReceipt({ id: 'github', operation: 'read', status: 'succeeded', timestamp: '2026-09-08T10:00:00.000Z' });
+  const second = createReceipt({ id: 'slack', operation: 'write', status: 'planned', reason: 'dry-run', timestamp: '2026-09-08T10:01:00.000Z' });
+  chain.append(first);
+  chain.append(second);
+  const checkpoint = chain.checkpoint();
+  assert.equal(chain.verify().valid, true);
+
+  const tampered = chain.entries();
+  tampered[1] = { ...tampered[1], receipt: { ...tampered[1].receipt, status: 'succeeded' } };
+  assert.deepEqual(chain.verify(tampered), { valid: false, length: 2, errorAt: 1 });
+
+  const truncated = chain.entries().slice(0, 1);
+  assert.deepEqual(chain.verify(truncated, checkpoint), {
+    valid: false,
+    length: 1,
+    errorAt: 1,
+    reason: 'checkpoint-mismatch'
+  });
 });
