@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { loadFabric } from '../src/catalog.mjs';
 import { planConnectorAction } from '../src/planner.mjs';
+import { ConnectorRuntime } from '../src/runtime.mjs';
+import { auditConnectors } from '../src/audit.mjs';
 
 const [command = 'status', ...args] = process.argv.slice(2);
 
@@ -30,6 +32,11 @@ if (command === 'list') {
   const connector = fabric.connectors.find((entry) => entry.id === id);
   if (!connector) throw new Error(`unknown connector: ${id}`);
   console.log(JSON.stringify(connector, null, 2));
+} else if (command === 'audit') {
+  const concurrencyFlag = args.find((arg) => arg.startsWith('--concurrency='));
+  const concurrency = concurrencyFlag ? Number(concurrencyFlag.slice(14)) : 4;
+  const runtime = new ConnectorRuntime();
+  console.log(JSON.stringify(await auditConnectors({ runtime, concurrency }), null, 2));
 } else if (command === 'check') {
   const fabric = await loadFabric();
   const badRoles = fabric.connectors.filter(({ role }) => !['discussion', 'delivery', 'event', 'control', 'decision', 'reference-only'].includes(role));
