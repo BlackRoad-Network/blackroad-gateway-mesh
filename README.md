@@ -25,6 +25,7 @@ The executable v1.9.1 registry defines 62 connector contracts. It separates each
 node bin/road-connectors.mjs check
 node bin/road-connectors.mjs status
 node bin/road-connectors.mjs list
+node bin/road-connectors.mjs describe slack
 node bin/road-connectors.mjs plan github read
 node bin/road-connectors.mjs plan slack write --evidence=explicit-user-approval
 node --test test/*.test.mjs
@@ -41,6 +42,12 @@ node --test test/*.test.mjs
 5. Add a regression test, run `check`, and run the complete test suite.
 
 Provider-specific adapters sit behind this contract. A successful adapter call does not count as a successful mutation until the provider is read back and the intended state is verified.
+
+## Adapter runtime
+
+`ConnectorRuntime` accepts adapters by canonical connector id or shared provider alias. Execution is dry-run by default. Live execution remains blocked unless the planner accepts every required evidence field, an adapter is registered, and writes pass provider read-after-write verification.
+
+Receipts contain an SHA-256 digest of the input instead of the input itself, so tokens, message bodies, and account data are not copied into logs.
 
 ## BlackRoad Ecosystem
 
