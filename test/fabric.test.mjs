@@ -7,6 +7,9 @@ import { AdapterRegistry, defineAdapter, inspectAdapter } from '../src/adapter-s
 import { auditConnectors, diffHealthSnapshots } from '../src/audit.mjs';
 import { ReceiptChain } from '../src/receipt-chain.mjs';
 import { createReceipt } from '../src/receipt.mjs';
+import { routeTask, validateRoutingProfiles } from '../src/router.mjs';
+import { createMcpAdapter } from '../src/mcp-adapter.mjs';
+import { CircuitBreaker, CircuitOpenError, TimeoutError, invokeWithResilience } from '../src/resilience.mjs';
 
 test('contains exactly 62 uniquely classified connectors', async () => {
   const fabric = await loadFabric();
@@ -239,4 +242,112 @@ test('receipt chain verifies intact history and detects tampering', () => {
     errorAt: 1,
     reason: 'checkpoint-mismatch'
   });
+});
+
+test('billing never substitutes another connector for broken Stripe', async () => {
+  const route = await routeTask({ task: 'billing', operation: 'read' });
+  assert.equal(route.allowed, false);
+  assert.equal(route.reason, 'authoritative-connector-unavailable');
+  assert.deepEqual(route.alternatives, []);
+  assert.deepEqual(route.unavailable, [{ id: 'stripe', state: 'broken' }]);
+});
+
+test('all semantic routes reference compatible canonical connectors', async () => {
+  const validation = await validateRoutingProfiles();
+  assert.deepEqual(validation, { valid: true, profiles: 12, connectorReferences: 37, errors: [] });
+});
+
+test('equivalent writes require explicit healthy provider selection', async () => {
+  const undecided = await routeTask({ task: 'email-delivery', operation: 'write' });
+  assert.equal(undecided.allowed, false);
+  assert.equal(undecided.reason, 'explicit-provider-selection-required');
+  assert.deepEqual(undecided.alternatives, ['gmail', 'resend']);
+
+  const selected = await routeTask({ task: 'email-delivery', operation: 'write', preferred: 'gmail' });
+  assert.equal(selected.allowed, true);
+  assert.equal(selected.selected, 'gmail');
+  assert.equal(selected.requiresExplicitSelection, true);
+});
+
+test('unhealthy preferred connector does not trigger silent write failover', async () => {
+  const route = await routeTask({ task: 'analytics', operation: 'write', preferred: 'amplitude' });
+  assert.equal(route.reason, 'operation-not-supported');
+  const meeting = await routeTask({ task: 'collaborative-work', operation: 'write', preferred: 'surprise-provider' });
+  assert.equal(meeting.allowed, false);
+  assert.equal(meeting.reason, 'preferred-connector-unavailable');
+  assert.equal(meeting.selected, null);
+});
+
+test('reference-only routing cannot execute secret access', async () => {
+  const route = await routeTask({ task: 'secrets', operation: 'read' });
+  assert.equal(route.allowed, false);
+  assert.equal(route.reason, 'reference-only');
+});
+
+test('resilience retries transient reads and returns the successful value', async () => {
+  let calls = 0;
+  const value = await invokeWithResilience({
+    key: 'github:read',
+    operation: 'read',
+    attempts: 3,
+    timeoutMs: 100,
+    invoke: async () => {
+      calls += 1;
+      if (calls < 3) throw Object.assign(new Error('temporary'), { transient: true });
+      return { ok: true };
+    }
+  });
+  assert.deepEqual(value, { ok: true });
+  assert.equal(calls, 3);
+});
+
+test('resilience never automatically retries writes', async () => {
+  let calls = 0;
+  await assert.rejects(invokeWithResilience({
+    key: 'gmail:write',
+    operation: 'write',
+    attempts: 5,
+    timeoutMs: 100,
+    invoke: async () => {
+      calls += 1;
+      throw Object.assign(new Error('temporary'), { transient: true });
+    }
+  }), /temporary/);
+  assert.equal(calls, 1);
+});
+
+test('timeouts are transient and circuit breaker opens at its threshold', async () => {
+  let now = 0;
+  const breaker = new CircuitBreaker({ failureThreshold: 2, cooldownMs: 1000, clock: () => now });
+  const never = () => new Promise(() => {});
+  await assert.rejects(invokeWithResilience({ key: 'slow', operation: 'read', attempts: 1, timeoutMs: 5, breaker, invoke: never }), TimeoutError);
+  await assert.rejects(invokeWithResilience({ key: 'slow', operation: 'read', attempts: 1, timeoutMs: 5, breaker, invoke: never }), TimeoutError);
+  assert.equal(breaker.state('slow'), 'open');
+  await assert.rejects(invokeWithResilience({ key: 'slow', operation: 'read', breaker, invoke: async () => ({}) }), CircuitOpenError);
+  now = 1000;
+  assert.equal(await invokeWithResilience({ key: 'slow', operation: 'read', attempts: 1, timeoutMs: 20, breaker, invoke: async () => 'recovered' }), 'recovered');
+  assert.equal(breaker.state('slow'), 'closed');
+});
+
+test('MCP adapter maps tools and verifies writes through a read operation', async () => {
+  const calls = [];
+  const adapter = createMcpAdapter({
+    id: 'gmail',
+    operations: ['read', 'write'],
+    invoke: async (tool, args) => {
+      calls.push({ tool, args });
+      if (tool === 'gmail.verify') return { ok: true, detail: 'message read back' };
+      return { id: 'provider-message-1' };
+    },
+    actions: {
+      read: { tool: 'gmail.read' },
+      write: { tool: 'gmail.send' },
+      verify: { tool: 'gmail.verify', buildArguments: ({ result }) => ({ id: result.id }) }
+    }
+  });
+  const result = await adapter.execute({ operation: 'write', input: { to: 'owner' } });
+  const verified = await adapter.verify({ operation: 'write', input: {}, result });
+  assert.deepEqual(calls.map(({ tool }) => tool), ['gmail.send', 'gmail.verify']);
+  assert.deepEqual(calls[1].args, { id: 'provider-message-1' });
+  assert.deepEqual(verified, { ok: true, detail: 'message read back' });
 });
