@@ -23,6 +23,13 @@ if (command === 'list') {
   if (!id) throw new Error('usage: road-connectors plan <connector> <read|write> [--evidence=name]');
   const evidence = Object.fromEntries(flags.filter((flag) => flag.startsWith('--evidence=')).map((flag) => [flag.slice(11), true]));
   console.log(JSON.stringify(await planConnectorAction(id, operation, evidence), null, 2));
+} else if (command === 'describe') {
+  const [id] = args;
+  if (!id) throw new Error('usage: road-connectors describe <connector>');
+  const fabric = await loadFabric();
+  const connector = fabric.connectors.find((entry) => entry.id === id);
+  if (!connector) throw new Error(`unknown connector: ${id}`);
+  console.log(JSON.stringify(connector, null, 2));
 } else if (command === 'check') {
   const fabric = await loadFabric();
   const badRoles = fabric.connectors.filter(({ role }) => !['discussion', 'delivery', 'event', 'control', 'decision', 'reference-only'].includes(role));
