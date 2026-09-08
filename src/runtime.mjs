@@ -1,13 +1,14 @@
 import { getConnector } from './catalog.mjs';
 import { planConnectorAction } from './planner.mjs';
 import { createReceipt } from './receipt.mjs';
+import { AdapterRegistry } from './adapter-sdk.mjs';
 
 export class ConnectorRuntime {
   #adapters;
   #clock;
 
   constructor({ adapters = new Map(), clock = () => new Date().toISOString() } = {}) {
-    this.#adapters = adapters instanceof Map ? new Map(adapters) : new Map(Object.entries(adapters));
+    this.#adapters = adapters instanceof AdapterRegistry ? adapters : new AdapterRegistry(adapters);
     this.#clock = clock;
   }
 
@@ -15,7 +16,7 @@ export class ConnectorRuntime {
     const connector = await getConnector(id);
     if (!connector) return { id, reachable: false, state: 'unknown', reason: 'unknown-connector' };
 
-    const adapter = this.#adapters.get(id) ?? this.#adapters.get(connector.observedVia);
+    const adapter = this.#adapters.resolve(id, connector.observedVia);
     if (!adapter?.probe) {
       return {
         id,
@@ -41,9 +42,12 @@ export class ConnectorRuntime {
     if (dryRun) return { plan, receipt: createReceipt({ id, operation, status: 'planned', reason: 'dry-run', input, timestamp }) };
 
     const connector = await getConnector(id);
-    const adapter = this.#adapters.get(id) ?? this.#adapters.get(connector.observedVia);
+    const adapter = this.#adapters.resolve(id, connector.observedVia);
     if (!adapter?.execute) {
       return { plan, receipt: createReceipt({ id, operation, status: 'blocked', reason: 'adapter-not-registered', input, timestamp }) };
+    }
+    if (Array.isArray(adapter.operations) && !adapter.operations.includes(operation)) {
+      return { plan, receipt: createReceipt({ id, operation, status: 'blocked', reason: 'adapter-operation-not-supported', input, timestamp }) };
     }
 
     try {
