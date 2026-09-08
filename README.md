@@ -27,6 +27,8 @@ node bin/road-connectors.mjs status
 node bin/road-connectors.mjs list
 node bin/road-connectors.mjs describe slack
 node bin/road-connectors.mjs audit --concurrency=4
+node bin/road-connectors.mjs route billing read
+node bin/road-connectors.mjs route email-delivery write --preferred=gmail
 node bin/road-connectors.mjs plan github read
 node bin/road-connectors.mjs plan slack write --evidence=explicit-user-approval
 node --test test/*.test.mjs
@@ -57,6 +59,14 @@ Receipts contain an SHA-256 digest of the input instead of the input itself, so 
 `auditConnectors` probes a selected set or all 62 connectors with bounded concurrency from 1–16, while preserving canonical result order. `diffHealthSnapshots` classifies recovery, degradation, and same-health state changes. With no live adapters registered, the CLI audit reads the verified catalog overlay and performs no network calls.
 
 `ReceiptChain` creates a SHA-256-linked sequence of execution receipts. Its verifier detects modification, insertion, or reordering; checking against an externally retained `checkpoint()` also detects tail deletion. Raw request inputs are never stored in the chain.
+
+## Semantic routing and MCP bridge
+
+Routing profiles map outcomes such as collaboration, email delivery, document signing, scheduling, deployment, analytics, meetings, billing, and secrets to eligible connectors. Read routes may select the first healthy equivalent. Write routes require an explicit provider selection and never silently fail over.
+
+`source-of-truth` routes cannot substitute providers: broken Stripe remains a blocked billing route. `reference-only` routes cannot execute: 1Password remains a secret reference boundary.
+
+`createMcpAdapter` converts an injected MCP invoker and declarative tool map into a conforming adapter. Read operations can retry transient failures; writes receive exactly one attempt. Timeouts and circuit breaking prevent a failing provider from consuming the entire connector worker pool.
 
 ## BlackRoad Ecosystem
 
