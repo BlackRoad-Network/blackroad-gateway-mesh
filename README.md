@@ -1,15 +1,49 @@
 <!-- BlackRoad SEO Enhanced -->
 
-# ulackroad gateway mesh
+# BlackRoad gateway mesh
 
 > Part of **[BlackRoad OS](https://blackroad.io)** — Sovereign Computing for Everyone
 
 [![BlackRoad OS](https://img.shields.io/badge/BlackRoad-OS-ff1d6c?style=for-the-badge)](https://blackroad.io)
 [![BlackRoad-Network](https://img.shields.io/badge/Org-BlackRoad-Network-2979ff?style=for-the-badge)](https://github.com/BlackRoad-Network)
 
-**ulackroad gateway mesh** is part of the **BlackRoad OS** ecosystem — a sovereign, distributed operating system built on edge computing, local AI, and mesh networking by **BlackRoad OS, Inc.**
+**BlackRoad gateway mesh** is the provider-neutral connector control plane for the BlackRoad OS ecosystem.
 
-### BlackRoad Ecosystem
+## Connector Fabric
+
+The executable v1.9.1 registry defines 62 connector contracts. It separates each connector's architectural role from its observed account state, then applies one fail-closed planner to every proposed read or mutation.
+
+- Roles: `discussion`, `delivery`, `event`, `control`, `decision`, and `reference-only`.
+- States: `ready`, `ready-empty`, `limited`, `broken`, `unverified`, `unavailable`, and `policy-only`.
+- Provider aliases share one authenticated control plane without losing distinct contract identities.
+- Mutations require ownership, exclusive claim, idempotency, authentication, verification, approval, and—where applicable—governance evidence.
+- No tokens, cookies, account identifiers, message contents, or other secrets belong in the registry.
+
+### Commands
+
+```bash
+node bin/road-connectors.mjs check
+node bin/road-connectors.mjs status
+node bin/road-connectors.mjs list
+node bin/road-connectors.mjs plan github read
+node bin/road-connectors.mjs plan slack write --evidence=explicit-user-approval
+node --test test/*.test.mjs
+```
+
+`plan` reports every missing precondition. Supplying one evidence flag never implies the others.
+
+### Adding or repairing a connector
+
+1. Add exactly one canonical role in `data/connector-fabric.json`.
+2. Add an observation only after a harmless account-backed read; otherwise leave it `policy-only`.
+3. Use `providerAliases` only when the alias truly shares the target's authentication and health.
+4. Keep event connectors read-only and reference-only connectors non-executable.
+5. Add a regression test, run `check`, and run the complete test suite.
+
+Provider-specific adapters sit behind this contract. A successful adapter call does not count as a successful mutation until the provider is read back and the intended state is verified.
+
+## BlackRoad Ecosystem
+
 | Org | Focus |
 |---|---|
 | [BlackRoad OS](https://github.com/BlackRoad-OS) | Core platform |
@@ -23,19 +57,17 @@
 
 **Website**: [blackroad.io](https://blackroad.io) | **Chat**: [chat.blackroad.io](https://chat.blackroad.io) | **Search**: [search.blackroad.io](https://search.blackroad.io)
 
----
-
-
-
 ## Getting Started
+
 ```bash
 git clone https://github.com/BlackRoad-Network/blackroad-gateway-mesh.git
 cd blackroad-gateway-mesh
 ```
 
 ## License
+
 Proprietary — BlackRoad OS, Inc. All rights reserved.
 
 ---
-*BlackRoad OS — Remember the Road. Pave Tomorrow.*
 
+*BlackRoad OS — Remember the Road. Pave Tomorrow.*
