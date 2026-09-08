@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 
 export function digestInput(input) {
-  return createHash('sha256').update(stableJson(input)).digest('hex');
+  return createHash('sha256').update(canonicalJson(input)).digest('hex');
 }
 
 export function createReceipt({ id, operation, status, reason = null, input = {}, verification = null, timestamp }) {
@@ -17,10 +17,12 @@ export function createReceipt({ id, operation, status, reason = null, input = {}
   });
 }
 
-function stableJson(value) {
-  if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
+export function canonicalJson(value) {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
   if (value && typeof value === 'object') {
-    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableJson(value[key])}`).join(',')}}`;
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`;
   }
-  return JSON.stringify(value);
+  const encoded = JSON.stringify(value);
+  if (encoded === undefined) throw new TypeError('receipt values must be JSON-serializable');
+  return encoded;
 }
