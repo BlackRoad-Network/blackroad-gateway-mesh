@@ -26,6 +26,7 @@ node bin/road-connectors.mjs check
 node bin/road-connectors.mjs status
 node bin/road-connectors.mjs list
 node bin/road-connectors.mjs describe slack
+node bin/road-connectors.mjs audit --concurrency=4
 node bin/road-connectors.mjs plan github read
 node bin/road-connectors.mjs plan slack write --evidence=explicit-user-approval
 node --test test/*.test.mjs
@@ -48,6 +49,14 @@ Provider-specific adapters sit behind this contract. A successful adapter call d
 `ConnectorRuntime` accepts adapters by canonical connector id or shared provider alias. Execution is dry-run by default. Live execution remains blocked unless the planner accepts every required evidence field, an adapter is registered, and writes pass provider read-after-write verification.
 
 Receipts contain an SHA-256 digest of the input instead of the input itself, so tokens, message bodies, and account data are not copied into logs.
+
+## Adapter SDK and fleet audit
+
+`defineAdapter` rejects malformed adapters and requires every write-capable adapter to provide a verification function. `AdapterRegistry` rejects duplicate registrations and can resolve a canonical connector through its shared provider alias.
+
+`auditConnectors` probes a selected set or all 62 connectors with bounded concurrency from 1–16, while preserving canonical result order. `diffHealthSnapshots` classifies recovery, degradation, and same-health state changes. With no live adapters registered, the CLI audit reads the verified catalog overlay and performs no network calls.
+
+`ReceiptChain` creates a SHA-256-linked sequence of execution receipts. Its verifier detects modification, insertion, or reordering; checking against an externally retained `checkpoint()` also detects tail deletion. Raw request inputs are never stored in the chain.
 
 ## BlackRoad Ecosystem
 
