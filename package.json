@@ -13,7 +13,10 @@
     "./catalog": "./src/catalog.mjs",
     "./planner": "./src/planner.mjs",
     "./capabilities": "./src/capabilities.mjs",
-    "./receipt-chain": "./src/receipt-chain.mjs"
+    "./receipt-chain": "./src/receipt-chain.mjs",
+    "./mcp-adapter": "./src/mcp-adapter.mjs",
+    "./resilience": "./src/resilience.mjs",
+    "./router": "./src/router.mjs"
   },
   "scripts": {
     "check": "node bin/road-connectors.mjs check",
