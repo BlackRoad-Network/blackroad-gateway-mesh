@@ -8,9 +8,12 @@
   },
   "exports": {
     ".": "./src/runtime.mjs",
+    "./adapter-sdk": "./src/adapter-sdk.mjs",
+    "./audit": "./src/audit.mjs",
     "./catalog": "./src/catalog.mjs",
     "./planner": "./src/planner.mjs",
-    "./capabilities": "./src/capabilities.mjs"
+    "./capabilities": "./src/capabilities.mjs",
+    "./receipt-chain": "./src/receipt-chain.mjs"
   },
   "scripts": {
     "check": "node bin/road-connectors.mjs check",
