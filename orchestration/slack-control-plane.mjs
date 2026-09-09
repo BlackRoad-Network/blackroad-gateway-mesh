@@ -219,6 +219,67 @@ export function normalizeGitHubPullRequestEvent(event) {
   };
 }
 
+export function planGitHubSlackDelivery(event, cockpitState = {}) {
+  if (
+    !event
+    || event.accepted !== true
+    || event.kind !== "GITHUB_PULL_REQUEST_EVENT"
+  ) {
+    return {
+      state: "BLOCKED_INVALID_EVENT",
+      shouldPost: false
+    };
+  }
+
+  const seenDeliveryKeys = new Set(
+    Array.isArray(cockpitState.seenDeliveryKeys)
+      ? cockpitState.seenDeliveryKeys
+      : []
+  );
+  const seenSemanticKeys = new Set(
+    Array.isArray(cockpitState.seenSemanticKeys)
+      ? cockpitState.seenSemanticKeys
+      : []
+  );
+
+  if (seenDeliveryKeys.has(event.deliveryIdempotencyKey)) {
+    return {
+      state: "NOOP_DUPLICATE_DELIVERY",
+      shouldPost: false,
+      duplicateKey: event.deliveryIdempotencyKey
+    };
+  }
+
+  if (seenSemanticKeys.has(event.semanticIdempotencyKey)) {
+    return {
+      state: "NOOP_DUPLICATE_SEMANTIC_EVENT",
+      shouldPost: false,
+      duplicateKey: event.semanticIdempotencyKey
+    };
+  }
+
+  const parentsByMarker = cockpitState.parentsByMarker
+    && typeof cockpitState.parentsByMarker === "object"
+    ? cockpitState.parentsByMarker
+    : {};
+  const threadTs = clean(parentsByMarker[event.marker]);
+
+  return {
+    state: "READY_TO_POST",
+    shouldPost: true,
+    mode: threadTs ? "THREAD" : "PARENT",
+    channelId: COCKPIT.channelId,
+    threadTs: threadTs || null,
+    marker: event.marker,
+    classification: event.classification,
+    recordAfterVerifiedWrite: {
+      deliveryKey: event.deliveryIdempotencyKey,
+      semanticKey: event.semanticIdempotencyKey,
+      parentMarker: event.marker
+    }
+  };
+}
+
 export function planOllamaDispatch(evidence = {}) {
   const required = {
     tailnetNodeIdentity: Boolean(evidence.tailnetNodeIdentity),
