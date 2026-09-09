@@ -1,0 +1,125 @@
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@blackroad/messaging-framework",
+-  "version": "1.8.0",
++  "version": "1.9.0",
+   "private": true,
+   "type": "module",
+   "scripts": {
+--- a/messaging/package.json
++++ b/messaging/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "@blackroad/messaging-framework",
+-  "version": "1.8.0",
++  "version": "1.9.0",
+   "private": true,
+   "type": "module",
+   "scripts": {
+--- a/messaging/cli.mjs
++++ b/messaging/cli.mjs
+@@ -63,6 +63,7 @@
+ import { ingressStatus, reconcileInboundEvent, routeInboundEvent } from './ingress.mjs';
+ import { ingestProviderEvent, providerConflictPlan, providerEventStatus, resolveProviderConflict } from './provider-events.mjs';
+ import { inboundEnvelopePlan, inboundEventMappings, inboundSecurityStatus, ingestInboundEnvelope } from './inbound-security.mjs';
++import { healthMatrix, probeTransport } from './transport-health.mjs';
+ 
+ function parse(argv) {
+@@ -128,6 +129,8 @@
+   journals
+   providers
+   policy
++  health-probe --kind rnode|tailscale|ping|tcp|dns|http|netlify [--target HOST] [--port N] [--url URL] [--timeout-ms N]
++  health-matrix [--tailscale-target HOST] [--ping-target HOST] [--tcp-target HOST --tcp-port N] [--netlify-url URL]
+@@ -236,6 +239,29 @@
++  if (command === 'health-probe') {
++    print(await probeTransport({
++      kind: required(flags, 'kind'),
++      target: flags.target ?? null,
++      port: flags.port ? Number(flags.port) : undefined,
++      url: flags.url ?? null,
++      timeoutMs: flags['timeout-ms'] ? Number(flags['timeout-ms']) : undefined,
++    }));
++    return;
++  }
++
++  if (command === 'health-matrix') {
++    print(await healthMatrix({
++      tailscaleTarget: flags['tailscale-target'] ?? null,
++      pingTarget: flags['ping-target'] ?? null,
++      tcpTarget: flags['tcp-target'] ?? null,
++      tcpPort: flags['tcp-port'] ? Number(flags['tcp-port']) : undefined,
++      netlifyUrl: flags['netlify-url'] ?? undefined,
++      timeoutMs: flags['timeout-ms'] ? Number(flags['timeout-ms']) : undefined,
++    }));
++    return;
++  }
+--- a/messaging/mcp-server.mjs
++++ b/messaging/mcp-server.mjs
+@@ -36,10 +36,11 @@
+ import { ingressStatus, reconcileInboundEvent, routeInboundEvent } from './ingress.mjs';
+ import { ingestProviderEvent, providerConflictPlan, providerEventStatus, resolveProviderConflict } from './provider-events.mjs';
+ import { inboundEnvelopePlan, inboundEventMappings, inboundSecurityStatus, ingestInboundEnvelope } from './inbound-security.mjs';
++import { healthMatrix, probeTransport } from './transport-health.mjs';
+ 
+ const SERVER = {
+   name: 'blackroad-messaging',
+-  version: '1.8.0',
++  version: '1.9.0',
+ };
+@@ -378,6 +379,34 @@
++  {
++    name: 'road_messaging_health_probe',
++    description: 'Run one read-only transport or edge health probe. RNode and Tailscale probes execute only on the host running this MCP server.',
++    inputSchema: {
++      type: 'object', required: ['kind'],
++      properties: {
++        kind: { enum: ['rnode','tailscale','ping','tcp','dns','http','netlify'] },
++        target: { type: ['string','null'] },
++        port: { type: ['integer','null'], minimum: 1, maximum: 65535 },
++        url: { type: ['string','null'] },
++        timeoutMs: { type: ['integer','null'], minimum: 100, maximum: 30000 }
++      }, additionalProperties: false,
++    },
++  },
++  {
++    name: 'road_messaging_health_matrix',
++    description: 'Run the local RNode, Tailscale, Netlify HTTP, and optional ICMP/TCP health matrix without mutating any provider.',
++    inputSchema: {
++      type: 'object', properties: {
++        tailscaleTarget: { type: ['string','null'] },
++        pingTarget: { type: ['string','null'] },
++        tcpTarget: { type: ['string','null'] },
++        tcpPort: { type: ['integer','null'], minimum: 1, maximum: 65535 },
++        netlifyUrl: { type: ['string','null'] },
++        timeoutMs: { type: ['integer','null'], minimum: 100, maximum: 30000 }
++      }, additionalProperties: false,
++    },
++  },
+@@ -510,6 +539,8 @@
++  if (name === 'road_messaging_health_probe') return probeTransport(args);
++  if (name === 'road_messaging_health_matrix') return healthMatrix(args);
+--- a/messaging/tests/mcp.test.mjs
++++ b/messaging/tests/mcp.test.mjs
+@@ -322,3 +322,23 @@
++test('MCP exposes read-only transport health probes', async () => {
++  const temp = await mkdtemp(join(tmpdir(), 'road-messaging-health-mcp-'));
++  const child = startMcp(temp);
++  try {
++    const list = await lineRequest(child, { jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} });
++    const names = list.result.tools.map((tool) => tool.name);
++    assert.ok(names.includes('road_messaging_health_probe'));
++    assert.ok(names.includes('road_messaging_health_matrix'));
++    const probe = await lineRequest(child, {
++      jsonrpc: '2.0', id: 2, method: 'tools/call',
++      params: { name: 'road_messaging_health_probe', arguments: { kind: 'dns', target: 'localhost' } },
++    });
++    assert.equal(probe.result.structuredContent.probe, 'dns');
++    assert.equal(probe.result.structuredContent.state, 'RESOLVED');
++  } finally {
++    child.kill('SIGTERM');
++    await rm(temp, { recursive: true, force: true });
++  }
++});
