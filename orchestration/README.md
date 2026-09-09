@@ -52,6 +52,14 @@ Commands are normalized into the existing collaboration intent, invocation, veri
 
 GitHub pull-request events are classified as `OPENED`, `READY`, `UPDATED`, `MERGED`, or `CLOSED`. Unsupported actions fail closed. Delivery IDs remain traceable while semantic keys deduplicate provider redelivery of the same PR state.
 
+The delivery planner emits exactly one of:
+
+- `PARENT` when no canonical PR marker is recorded;
+- `THREAD` with the exact existing Slack timestamp when a parent exists;
+- `NOOP_DUPLICATE_*` when either the provider delivery or semantic event is already recorded.
+
+Keys are recorded only after the provider write is read back and verified.
+
 ## Provider roles
 
 | Provider | Role | Current state |
