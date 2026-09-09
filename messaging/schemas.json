@@ -1,0 +1,98 @@
+{
+  "schema": "road-conversation-schema-bundle-v1",
+  "conversation": {
+    "$id": "road://schema/conversation/v1",
+    "type": "object",
+    "required": ["id", "title", "state", "createdAt", "updatedAt", "bindings"],
+    "properties": {
+      "id": {"type":"string","pattern":"^road://conversation/[a-f0-9]{24}$"},
+      "title": {"type":"string","minLength":1,"maxLength":300},
+      "state": {"enum":["OPEN","WAITING","RESOLVED","ARCHIVED"]},
+      "createdAt": {"type":"string","format":"date-time"},
+      "updatedAt": {"type":"string","format":"date-time"},
+      "bindings": {"type":"array","items":{"$ref":"road://schema/conversation-binding/v1"}},
+      "labels": {"type":"array","items":{"type":"string"},"uniqueItems":true}
+    },
+    "additionalProperties": false
+  },
+  "binding": {
+    "$id": "road://schema/conversation-binding/v1",
+    "type": "object",
+    "required": ["platform", "workspaceRef", "channelRef", "threadRef", "state"],
+    "properties": {
+      "platform": {"type":"string","minLength":1},
+      "workspaceRef": {"type":"string","minLength":1},
+      "channelRef": {"type":"string","minLength":1},
+      "threadRef": {"type":"string","minLength":1},
+      "messageRef": {"type":["string","null"]},
+      "versionRef": {"type":["string","null"]},
+      "state": {"enum":["BOUND","STALE","UNAVAILABLE","REVOKED"]},
+      "visibility": {"enum":["PRIVATE","INTERNAL","SHARED","PUBLIC"]}
+    },
+    "additionalProperties": false
+  },
+  "event": {
+    "$id": "road://schema/conversation-event/v1",
+    "type": "object",
+    "required": ["id", "type", "platform", "providerEventId", "contentHash", "occurredAt", "hopCount", "routeTrace"],
+    "properties": {
+      "id": {"type":"string","pattern":"^road://event/[a-f0-9]{24}$"},
+      "type": {"enum":["conversation.created","thread.started","message.received","message.sent","message.edited","message.deleted","mention.detected","comment.created","comment.replied","reaction.added","reaction.removed","discussion.resolved","discussion.reopened","draft.created","delivery.unknown"]},
+      "platform": {"type":"string","minLength":1},
+      "providerEventId": {"type":"string","minLength":1},
+      "conversationId": {"type":["string","null"]},
+      "threadRef": {"type":["string","null"]},
+      "messageRef": {"type":["string","null"]},
+      "authorRef": {"type":["string","null"]},
+      "contentRef": {"type":["string","null"]},
+      "contentHash": {"type":"string","pattern":"^sha256:[a-f0-9]{64}$"},
+      "correlationId": {"type":["string","null"]},
+      "causationId": {"type":["string","null"]},
+      "hopCount": {"type":"integer","minimum":0,"maximum":4},
+      "routeTrace": {"type":"array","items":{"type":"string"},"uniqueItems":true},
+      "occurredAt": {"type":"string","format":"date-time"}
+    },
+    "additionalProperties": false
+  },
+  "operationEnvelope": {
+    "$id": "road://schema/conversation-operation-envelope/v1",
+    "type": "object",
+    "required": ["operation", "platform", "resourceKey", "agentId"],
+    "properties": {
+      "operation": {"type":"string","minLength":1},
+      "platform": {"type":"string","minLength":1},
+      "resourceKey": {"type":"string","minLength":1},
+      "agentId": {"type":"string","pattern":"^(connector-orchestrator|agent-instance-[1-6])$"},
+      "sessionRef": {"type":["string","null"]},
+      "intentId": {"type":["string","null"]},
+      "claimId": {"type":["string","null"]},
+      "invocationId": {"type":["string","null"]},
+      "idempotencyKey": {"type":["string","null"]},
+      "requestHash": {"type":["string","null"]},
+      "expectedResourceVersionRef": {"type":["string","null"]},
+      "targetOwnerAgent": {"type":["string","null"]},
+      "contentRef": {"type":["string","null"]},
+      "contentHash": {"type":["string","null"],"pattern":"^sha256:[a-f0-9]{64}$"},
+      "userApprovalRef": {"type":["string","null"]},
+      "decisionReceiptRef": {"type":["string","null"]}
+    },
+    "additionalProperties": false
+  },
+  "delivery": {
+    "$id": "road://schema/conversation-delivery/v1",
+    "type": "object",
+    "required": ["id", "operation", "platform", "state", "createdAt", "updatedAt"],
+    "properties": {
+      "id": {"type":"string","minLength":1},
+      "operation": {"type":"string","minLength":1},
+      "platform": {"type":"string","minLength":1},
+      "state": {"enum":["PLANNED","PROVIDER_ACKNOWLEDGED","VERIFYING","VERIFIED","VERIFICATION_FAILED","FAILED","TIMEOUT_UNKNOWN","CANCELLED"]},
+      "providerRequestRef": {"type":["string","null"]},
+      "providerMessageRef": {"type":["string","null"]},
+      "verificationRef": {"type":["string","null"]},
+      "createdAt": {"type":"string","format":"date-time"},
+      "updatedAt": {"type":"string","format":"date-time"}
+    },
+    "additionalProperties": false
+  }
+}

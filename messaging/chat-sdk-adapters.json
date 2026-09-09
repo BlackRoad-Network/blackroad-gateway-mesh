@@ -1,0 +1,85 @@
+{
+  "schema": "road-chat-sdk-adapter-registry-v1",
+  "runtime": {
+    "package": "chat",
+    "stateBackends": [
+      {"package":"@chat-adapter/state-redis","use":"production-distributed-locking-and-dedupe"},
+      {"package":"@chat-adapter/state-ioredis","use":"production-ioredis"},
+      {"package":"@chat-adapter/state-pg","use":"production-postgresql"},
+      {"package":"@chat-adapter/state-memory","use":"development-only"}
+    ],
+    "rules": {
+      "sharedStateRequiredForMultipleInstances": true,
+      "memoryStateProductionAllowed": false,
+      "providerWebhookVerificationRequired": true,
+      "dedupeRequired": true,
+      "threadSubscriptionStateRequired": true
+    }
+  },
+  "adapters": [
+    {
+      "platform":"slack",
+      "package":"@chat-adapter/slack",
+      "factory":"createSlackAdapter",
+      "webhookPath":"/api/webhooks/slack",
+      "secretRefs":["SLACK_BOT_TOKEN","SLACK_SIGNING_SECRET"],
+      "state":"CONNECTOR_AVAILABLE"
+    },
+    {
+      "platform":"microsoft-teams",
+      "package":"@chat-adapter/teams",
+      "factory":"createTeamsAdapter",
+      "webhookPath":"/api/webhooks/teams",
+      "secretRefs":["MICROSOFT_APP_ID","MICROSOFT_APP_PASSWORD","MICROSOFT_TENANT_ID"],
+      "state":"CONFIG_REQUIRED"
+    },
+    {
+      "platform":"google-chat",
+      "package":"@chat-adapter/gchat",
+      "factory":"createGoogleChatAdapter",
+      "webhookPath":"/api/webhooks/gchat",
+      "secretRefs":["GOOGLE_CHAT_CREDENTIALS_REF"],
+      "state":"CONFIG_REQUIRED"
+    },
+    {
+      "platform":"discord",
+      "package":"@chat-adapter/discord",
+      "factory":"createDiscordAdapter",
+      "webhookPath":"/api/webhooks/discord",
+      "secretRefs":["DISCORD_BOT_TOKEN","DISCORD_PUBLIC_KEY"],
+      "state":"CONFIG_REQUIRED"
+    },
+    {
+      "platform":"telegram",
+      "package":"@chat-adapter/telegram",
+      "factory":"createTelegramAdapter",
+      "webhookPath":"/api/webhooks/telegram",
+      "secretRefs":["TELEGRAM_BOT_TOKEN","TELEGRAM_WEBHOOK_SECRET"],
+      "state":"CONFIG_REQUIRED"
+    },
+    {
+      "platform":"whatsapp",
+      "package":"@chat-adapter/whatsapp",
+      "factory":"createWhatsAppAdapter",
+      "webhookPath":"/api/webhooks/whatsapp",
+      "secretRefs":["WHATSAPP_ACCESS_TOKEN","WHATSAPP_VERIFY_TOKEN","WHATSAPP_APP_SECRET"],
+      "state":"CONFIG_REQUIRED"
+    },
+    {
+      "platform":"github",
+      "package":"@chat-adapter/github",
+      "factory":"createGitHubAdapter",
+      "webhookPath":"/api/webhooks/github",
+      "secretRefs":["GITHUB_APP_ID","GITHUB_PRIVATE_KEY_REF","GITHUB_WEBHOOK_SECRET"],
+      "state":"CONNECTOR_AVAILABLE"
+    },
+    {
+      "platform":"linear",
+      "package":"@chat-adapter/linear",
+      "factory":"createLinearAdapter",
+      "webhookPath":"/api/webhooks/linear",
+      "secretRefs":["LINEAR_CLIENT_ID","LINEAR_CLIENT_SECRET","LINEAR_WEBHOOK_SECRET"],
+      "state":"CONNECTOR_AVAILABLE"
+    }
+  ]
+}

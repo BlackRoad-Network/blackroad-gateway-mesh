@@ -1,0 +1,49 @@
+{
+  "schema": "road-conversation-workflow-templates-v1",
+  "templates": [
+    {
+      "id": "discussion-to-work-item",
+      "integrationOwnerAgent": "agent-instance-4",
+      "participants": ["agent-instance-2", "agent-instance-4"],
+      "steps": [
+        {"id":"read-thread","actionClass":"READ","owner":"agent-instance-4","dependsOn":[]},
+        {"id":"classify","actionClass":"OBSERVE","owner":"agent-instance-2","dependsOn":["read-thread"]},
+        {"id":"create-work-item","actionClass":"WRITE","owner":"agent-instance-4","dependsOn":["classify"],"requiresVerifiedDependencies":true},
+        {"id":"reply-with-link","actionClass":"COMMUNICATE","owner":"agent-instance-4","dependsOn":["create-work-item"],"requiresVerifiedDependencies":true}
+      ]
+    },
+    {
+      "id": "code-review-discussion",
+      "integrationOwnerAgent": "agent-instance-4",
+      "participants": ["agent-instance-2", "agent-instance-4"],
+      "steps": [
+        {"id":"read-review-thread","actionClass":"READ","owner":"agent-instance-2","dependsOn":[]},
+        {"id":"prepare-change","actionClass":"WRITE","owner":"agent-instance-2","dependsOn":["read-review-thread"]},
+        {"id":"verify-change","actionClass":"READ","owner":"agent-instance-2","dependsOn":["prepare-change"]},
+        {"id":"reply-review","actionClass":"COMMUNICATE","owner":"agent-instance-4","dependsOn":["verify-change"],"requiresVerifiedDependencies":true}
+      ]
+    },
+    {
+      "id": "cross-platform-status-thread",
+      "integrationOwnerAgent": "agent-instance-4",
+      "participants": ["agent-instance-4", "agent-instance-5"],
+      "steps": [
+        {"id":"collect-receipts","actionClass":"READ","owner":"agent-instance-4","dependsOn":[]},
+        {"id":"render-draft","actionClass":"WRITE","owner":"agent-instance-5","dependsOn":["collect-receipts"]},
+        {"id":"human-review","actionClass":"OBSERVE","owner":"agent-instance-4","dependsOn":["render-draft"]},
+        {"id":"post-status","actionClass":"COMMUNICATE","owner":"agent-instance-4","dependsOn":["human-review"],"requiresVerifiedDependencies":true}
+      ]
+    },
+    {
+      "id": "mention-to-agent-handoff",
+      "integrationOwnerAgent": "agent-instance-4",
+      "participants": ["agent-instance-2", "agent-instance-4"],
+      "steps": [
+        {"id":"mention-received","actionClass":"READ","owner":"agent-instance-4","dependsOn":[]},
+        {"id":"resolve-agent","actionClass":"READ","owner":"agent-instance-2","dependsOn":["mention-received"]},
+        {"id":"create-handoff","actionClass":"WRITE","owner":"agent-instance-4","dependsOn":["resolve-agent"],"requiresVerifiedDependencies":true},
+        {"id":"acknowledge-thread","actionClass":"COMMUNICATE","owner":"agent-instance-4","dependsOn":["create-handoff"],"requiresVerifiedDependencies":true}
+      ]
+    }
+  ]
+}

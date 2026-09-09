@@ -1,0 +1,11 @@
+{
+  "name": "@blackroad/conversation-fabric",
+  "version": "0.10.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check runtime.mjs && node --check road-message.mjs",
+    "test": "node --test runtime.test.mjs",
+    "verify": "npm run check && npm test && node road-message.mjs status"
+  }
+}
