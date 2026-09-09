@@ -7,6 +7,7 @@ import {
   normalizeGitHubPullRequestEvent,
   normalizeSlackEvent,
   parseRoadCommand,
+  planGitHubSlackDelivery,
   planOllamaDispatch
 } from "./slack-control-plane.mjs";
 
@@ -172,6 +173,64 @@ test("deduplicates semantic redeliveries while retaining delivery identity", () 
   assert.equal(first.classification, "UPDATED");
   assert.equal(first.semanticIdempotencyKey, redelivery.semanticIdempotencyKey);
   assert.notEqual(first.deliveryIdempotencyKey, redelivery.deliveryIdempotencyKey);
+});
+
+test("plans one parent and later events in its exact thread", () => {
+  const opened = normalizeGitHubPullRequestEvent({
+    action: "opened",
+    delivery_id: "delivery-parent",
+    repository: { full_name: COCKPIT.githubRepository },
+    pull_request: { number: 15, head: { sha: "head-a" } }
+  });
+  const parentPlan = planGitHubSlackDelivery(opened);
+
+  assert.equal(parentPlan.mode, "PARENT");
+  assert.equal(parentPlan.threadTs, null);
+  assert.equal(parentPlan.channelId, COCKPIT.channelId);
+
+  const updated = normalizeGitHubPullRequestEvent({
+    action: "synchronize",
+    delivery_id: "delivery-thread",
+    repository: { full_name: COCKPIT.githubRepository },
+    pull_request: { number: 15, head: { sha: "head-b" } }
+  });
+  const threadPlan = planGitHubSlackDelivery(updated, {
+    parentsByMarker: { [updated.marker]: "1788944931.111459" }
+  });
+
+  assert.equal(threadPlan.mode, "THREAD");
+  assert.equal(threadPlan.threadTs, "1788944931.111459");
+});
+
+test("turns recorded deliveries and semantic redeliveries into no-ops", () => {
+  const event = normalizeGitHubPullRequestEvent({
+    action: "synchronize",
+    delivery_id: "delivery-once",
+    repository: { full_name: COCKPIT.githubRepository },
+    pull_request: { number: 15, head: { sha: "same-head" } }
+  });
+
+  const deliveryDuplicate = planGitHubSlackDelivery(event, {
+    seenDeliveryKeys: [event.deliveryIdempotencyKey]
+  });
+  const semanticDuplicate = planGitHubSlackDelivery(event, {
+    seenSemanticKeys: [event.semanticIdempotencyKey]
+  });
+
+  assert.equal(deliveryDuplicate.state, "NOOP_DUPLICATE_DELIVERY");
+  assert.equal(deliveryDuplicate.shouldPost, false);
+  assert.equal(semanticDuplicate.state, "NOOP_DUPLICATE_SEMANTIC_EVENT");
+  assert.equal(semanticDuplicate.shouldPost, false);
+});
+
+test("refuses to plan a rejected or malformed provider event", () => {
+  const plan = planGitHubSlackDelivery({
+    accepted: false,
+    kind: "GITHUB_PULL_REQUEST_EVENT"
+  });
+
+  assert.equal(plan.state, "BLOCKED_INVALID_EVENT");
+  assert.equal(plan.shouldPost, false);
 });
 
 test("keeps Ollama blocked until every private-route proof exists", () => {
