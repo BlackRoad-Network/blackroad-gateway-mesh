@@ -50,6 +50,8 @@ One operation belongs to one Slack parent message and thread.
 
 Commands are normalized into the existing collaboration intent, invocation, verification, handoff, and receipt schemas. This directory does not replace those contracts.
 
+GitHub pull-request events are classified as `OPENED`, `READY`, `UPDATED`, `MERGED`, or `CLOSED`. Unsupported actions fail closed. Delivery IDs remain traceable while semantic keys deduplicate provider redelivery of the same PR state.
+
 ## Provider roles
 
 | Provider | Role | Current state |
