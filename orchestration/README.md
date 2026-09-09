@@ -50,6 +50,10 @@ One operation belongs to one Slack parent message and thread.
 
 Commands are normalized into the existing collaboration intent, invocation, verification, handoff, and receipt schemas. This directory does not replace those contracts.
 
+The command-intake planner is now executable policy. It deduplicates by canonical event ID, preserves Slack's exact thread timestamp, and binds approval to the command event, non-secret content hash, and thread. Reads can become dispatch-ready only after inbound subscription evidence is supplied. Mutating commands require a matching approval; high-risk targets require a matching strong approval. Intake itself performs no provider mutation, and the command is recorded only after a verified receipt.
+
+Secret-like material is rejected before a command target can enter the normalized envelope. Slack is never a place to paste tokens, passwords, private keys, or bearer credentials.
+
 GitHub pull-request events are classified as `OPENED`, `READY`, `UPDATED`, `MERGED`, or `CLOSED`. Unsupported actions fail closed. Delivery IDs remain traceable while semantic keys deduplicate provider redelivery of the same PR state.
 
 The delivery planner emits exactly one of:
@@ -64,7 +68,7 @@ Keys are recorded only after the provider write is read back and verified.
 
 | Provider | Role | Current state |
 |---|---|---|
-| Slack | cockpit / discussion | outbound write and read-back verified |
+| Slack | cockpit / discussion | outbound verified; command planner implemented; inbound subscription unverified |
 | GitHub | code + PR event source | event route enabled for this repository |
 | Tailscale | private service transport | contract defined; live tailnet state not observed in this connector session |
 | Ollama | private model worker | blocked until a node, listener, model inventory, and bounded inference are verified |
