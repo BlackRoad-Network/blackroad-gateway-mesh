@@ -116,6 +116,64 @@ test("accepts provider-normalized lowercase repository names", () => {
   assert.equal(result.marker, "[github:BlackRoad-Network/blackroad-gateway-mesh#14]");
 });
 
+test("classifies closed pull requests by merged state", () => {
+  const baseEvent = {
+    action: "closed",
+    delivery_id: "delivery-closed",
+    repository: { full_name: COCKPIT.githubRepository },
+    pull_request: { number: 15 }
+  };
+
+  assert.equal(
+    normalizeGitHubPullRequestEvent(baseEvent).classification,
+    "CLOSED"
+  );
+  assert.equal(
+    normalizeGitHubPullRequestEvent({
+      ...baseEvent,
+      delivery_id: "delivery-merged",
+      pull_request: { ...baseEvent.pull_request, merged: true }
+    }).classification,
+    "MERGED"
+  );
+});
+
+test("blocks unsupported pull-request actions", () => {
+  const result = normalizeGitHubPullRequestEvent({
+    action: "mystery_action",
+    delivery_id: "delivery-unknown",
+    repository: { full_name: COCKPIT.githubRepository },
+    pull_request: { number: 15 }
+  });
+
+  assert.equal(result.accepted, false);
+  assert.equal(result.state, "BLOCKED_UNSUPPORTED_ACTION");
+});
+
+test("deduplicates semantic redeliveries while retaining delivery identity", () => {
+  const event = {
+    action: "synchronize",
+    repository: { full_name: COCKPIT.githubRepository },
+    pull_request: {
+      number: 15,
+      head: { sha: "abc123" },
+      updated_at: "2026-09-09T09:07:51Z"
+    }
+  };
+  const first = normalizeGitHubPullRequestEvent({
+    ...event,
+    delivery_id: "delivery-a"
+  });
+  const redelivery = normalizeGitHubPullRequestEvent({
+    ...event,
+    delivery_id: "delivery-b"
+  });
+
+  assert.equal(first.classification, "UPDATED");
+  assert.equal(first.semanticIdempotencyKey, redelivery.semanticIdempotencyKey);
+  assert.notEqual(first.deliveryIdempotencyKey, redelivery.deliveryIdempotencyKey);
+});
+
 test("keeps Ollama blocked until every private-route proof exists", () => {
   const result = planOllamaDispatch({
     tailnetNodeIdentity: "olympia",
