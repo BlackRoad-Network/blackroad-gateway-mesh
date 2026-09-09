@@ -1,0 +1,30 @@
+name: Slack orchestration
+
+on:
+  pull_request:
+    paths:
+      - "orchestration/**"
+      - ".github/workflows/slack-orchestration.yml"
+  push:
+    branches:
+      - "slack-orchestration-v1-rebased"
+    paths:
+      - "orchestration/**"
+      - ".github/workflows/slack-orchestration.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Parse public manifest
+        run: node -e 'JSON.parse(require("node:fs").readFileSync("orchestration/slack-control-plane.v1.json", "utf8"))'
+      - name: Test Slack orchestration policy
+        run: node --test orchestration/slack-control-plane.test.mjs
