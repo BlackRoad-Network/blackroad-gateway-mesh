@@ -1,6 +1,6 @@
 {
   "schema": "road-slack-orchestration-control-plane-v1",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "authority": {
     "system": "RoadOS",
     "operator": "Alexa",
@@ -41,7 +41,15 @@
       "reconcile": "RECONCILE",
       "handoff": "HANDOFF"
     },
-    "unknownVerb": "BLOCKED_UNKNOWN_COMMAND"
+    "unknownVerb": "BLOCKED_UNKNOWN_COMMAND",
+    "intake": {
+      "state": "PLANNER_IMPLEMENTED_INBOUND_UNVERIFIED",
+      "dedupe": "canonical-event-id",
+      "threadBinding": "exact-provider-thread-ts",
+      "approvalBinding": ["canonical-event-id", "content-hash", "thread-ts"],
+      "recording": "after-verified-receipt",
+      "providerMutations": "none-at-intake"
+    }
   },
   "connectors": {
     "slack": {
