@@ -41,6 +41,16 @@ const HIGH_RISK = Object.freeze([
   ["PUBLIC_EXPOSURE", /\b(public|funnel|expose|dns|route)\b/i]
 ]);
 
+const SECRET_MATERIAL = Object.freeze([
+  /-----BEGIN [A-Z ]*PRIVATE KEY-----/,
+  /\b(?:github_pat|gh[opusr])_[A-Za-z0-9_]{20,}\b/,
+  /\bxox[baprs]-[A-Za-z0-9-]{20,}\b/,
+  /\btskey-[A-Za-z0-9-]{20,}\b/,
+  /\bsk-[A-Za-z0-9_-]{20,}\b/,
+  /\b(?:authorization|password|passwd|secret|token)\s*[:=]\s*\S{8,}/i,
+  /\bBearer\s+[A-Za-z0-9._~+/=-]{16,}\b/i
+]);
+
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
 }
@@ -81,6 +91,16 @@ export function parseRoadCommand(text) {
       verb,
       actionClass,
       reason: "An exact target or goal is required"
+    };
+  }
+
+  if (SECRET_MATERIAL.some((pattern) => pattern.test(target))) {
+    return {
+      accepted: false,
+      state: "BLOCKED_SECRET_MATERIAL",
+      verb,
+      actionClass,
+      reason: "Secret-like material must not enter Slack commands"
     };
   }
 
@@ -151,6 +171,88 @@ export function normalizeSlackEvent(event) {
     canonicalEventId: `road://event/${canonicalId}`,
     contentHash: `sha256:${contentHash}`,
     rawContentPersisted: false
+  };
+}
+
+export function planSlackCommandIntake(event, cockpitState = {}) {
+  if (
+    !event
+    || event.accepted !== true
+    || event.kind !== "ORCHESTRATION_COMMAND"
+  ) {
+    return { state: "BLOCKED_INVALID_EVENT", shouldDispatch: false };
+  }
+
+  const seen = new Set(
+    Array.isArray(cockpitState.seenCanonicalEventIds)
+      ? cockpitState.seenCanonicalEventIds
+      : []
+  );
+  if (seen.has(event.canonicalEventId)) {
+    return {
+      state: "NOOP_DUPLICATE_COMMAND",
+      shouldDispatch: false,
+      duplicateKey: event.canonicalEventId
+    };
+  }
+
+  if (cockpitState.inboundSubscriptionVerified !== true) {
+    return {
+      state: "BLOCKED_INBOUND_UNVERIFIED",
+      shouldDispatch: false,
+      missing: ["inboundSubscriptionVerified"]
+    };
+  }
+
+  if (!/^\d+\.\d+$/.test(event.thread)) {
+    return { state: "BLOCKED_INVALID_THREAD", shouldDispatch: false };
+  }
+
+  const command = event.command;
+  const approval = cockpitState.approval;
+  const approvalMatches = approval
+    && approval.approved === true
+    && approval.canonicalEventId === event.canonicalEventId
+    && approval.contentHash === event.contentHash
+    && approval.threadTs === event.thread;
+  const strongApprovalMatches = approvalMatches
+    && approval.strength === "STRONG";
+
+  if (command.requiresStrongApproval && !strongApprovalMatches) {
+    return {
+      state: "AWAITING_STRONG_AUTHORIZATION",
+      shouldDispatch: false,
+      approvalBoundTo: event.canonicalEventId,
+      risk: [...command.risk]
+    };
+  }
+
+  if (command.requiresApproval && !approvalMatches) {
+    return {
+      state: "AWAITING_AUTHORIZATION",
+      shouldDispatch: false,
+      approvalBoundTo: event.canonicalEventId,
+      risk: [...command.risk]
+    };
+  }
+
+  return {
+    schema: "road-slack-command-envelope-v1",
+    state: "READY_TO_DISPATCH",
+    shouldDispatch: true,
+    actionClass: command.actionClass,
+    verb: command.verb,
+    exactTarget: command.target,
+    operationThreadTs: event.thread,
+    sourceEvent: event.canonicalEventId,
+    contentHash: event.contentHash,
+    actor: event.actor,
+    automaticProviderMutations: [],
+    rawContentPersisted: false,
+    recordAfterVerifiedReceipt: {
+      canonicalEventId: event.canonicalEventId,
+      threadTs: event.thread
+    }
   };
 }
 
