@@ -33,7 +33,14 @@ export class AdapterRegistry {
     if (!CONNECTOR_ID.test(id ?? '')) throw new TypeError('registry key must be a canonical connector id');
     if (!adapter || typeof adapter !== 'object') throw new TypeError(`${id}: adapter must be an object`);
     if (this.#adapters.has(id)) throw new Error(`adapter already registered: ${id}`);
-    this.#adapters.set(id, adapter);
+    const validated = defineAdapter({
+      id,
+      operations: adapter.operations ?? ['read'],
+      probe: adapter.probe,
+      execute: adapter.execute,
+      verify: adapter.verify
+    });
+    this.#adapters.set(id, validated);
     return this;
   }
 

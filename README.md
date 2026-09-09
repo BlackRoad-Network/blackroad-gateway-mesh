@@ -11,7 +11,7 @@
 
 ## Connector Fabric
 
-The executable v1.9.1 registry defines 62 connector contracts. It separates each connector's architectural role from its observed account state, then applies one fail-closed planner to every proposed read or mutation.
+The executable v1.10.0 registry defines 65 connector contracts. It separates each connector's architectural role from its observed account state, then applies one fail-closed planner to every proposed read or mutation.
 
 - Roles: `discussion`, `delivery`, `event`, `control`, `decision`, and `reference-only`.
 - States: `ready`, `ready-empty`, `limited`, `broken`, `unverified`, `unavailable`, and `policy-only`.
@@ -29,6 +29,11 @@ node bin/road-connectors.mjs describe slack
 node bin/road-connectors.mjs audit --concurrency=4
 node bin/road-connectors.mjs route billing read
 node bin/road-connectors.mjs route email-delivery write --preferred=gmail
+node bin/road-connectors.mjs native status
+node bin/road-connectors.mjs native describe outlook-email
+node bin/road-connectors.mjs native plan cloudflare
+node bin/road-connectors.mjs apps status
+node bin/road-connectors.mjs apps describe github
 node bin/road-connectors.mjs plan github read
 node bin/road-connectors.mjs plan slack write --evidence=explicit-user-approval
 node --test test/*.test.mjs
@@ -46,9 +51,15 @@ node --test test/*.test.mjs
 
 Provider-specific adapters sit behind this contract. A successful adapter call does not count as a successful mutation until the provider is read back and the intended state is verified.
 
+## Native replacements
+
+Every external connector maps to exactly one owned capability inside the eight RoadOS surfaces: Search, Chat, Code, Work, Play, Design, Integrate, and Collaborate. The native exit gate requires owned storage, local behavior, provider-neutral import/export, disconnect, rollback, and receipts before a capability can become native-preferred. See [NATIVE-REPLACEMENTS.md](NATIVE-REPLACEMENTS.md).
+
 ## Adapter runtime
 
 `ConnectorRuntime` accepts adapters by canonical connector id or shared provider alias. Execution is dry-run by default. Live execution remains blocked unless the planner accepts every required evidence field, an adapter is registered, and writes pass provider read-after-write verification.
+
+Write evidence is never accepted as caller-supplied booleans. Every evidence record must be bound to the principal, live session, connector, operation, and canonical input digest; it must carry a trusted issuer, bounded validity window, unique nonce, and proof accepted by an injected `EvidenceVerifier`. The runtime consumes valid nonces atomically before execution so a concurrent retry cannot replay approval.
 
 Receipts contain an SHA-256 digest of the input instead of the input itself, so tokens, message bodies, and account data are not copied into logs.
 

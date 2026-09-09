@@ -42,5 +42,9 @@ function normalizeVerification(value) {
 }
 
 function publicDetail(value) {
-  return typeof value === 'string' ? value.replace(/[\r\n]+/g, ' ').slice(0, 240) : null;
+  return typeof value === 'string' ? value
+    .replace(/Bearer\s+\S+/gi, 'Bearer [REDACTED]')
+    .replace(/\b(token|password|passwd|secret|api[_-]?key)\s*[:=]\s*\S+/gi, '$1=[REDACTED]')
+    .replace(/[\r\n]+/g, ' ')
+    .slice(0, 240) : null;
 }

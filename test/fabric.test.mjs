@@ -7,15 +7,54 @@ import { AdapterRegistry, defineAdapter, inspectAdapter } from '../src/adapter-s
 import { auditConnectors, diffHealthSnapshots } from '../src/audit.mjs';
 import { ReceiptChain } from '../src/receipt-chain.mjs';
 import { createReceipt } from '../src/receipt.mjs';
+import { digestInput } from '../src/receipt.mjs';
+import { EvidenceVerifier } from '../src/evidence.mjs';
 import { routeTask, validateRoutingProfiles } from '../src/router.mjs';
 import { createMcpAdapter } from '../src/mcp-adapter.mjs';
 import { CircuitBreaker, CircuitOpenError, TimeoutError, invokeWithResilience } from '../src/resilience.mjs';
+import { getNativeTarget, nativeCoverage, planNativeExit, validateNativeCapabilities } from '../src/native.mjs';
+import { describeAppSurface, validateAppSurfaceRegistry } from '../src/apps.mjs';
 
-test('contains exactly 62 uniquely classified connectors', async () => {
+const AUTH_NOW = '2026-09-09T06:30:00.000Z';
+let evidenceNonce = 0;
+
+function trustedVerifier() {
+  return new EvidenceVerifier({
+    clock: () => AUTH_NOW,
+    verifyProof: async (record) => record.proof === `signed:${record.nonce}`
+  });
+}
+
+function signedEvidence(requirements, { id, operation = 'write', input = {}, sessionId = 'session-1', principal = 'user:alexa' }) {
+  return Object.fromEntries(requirements.map((requirement) => {
+    const nonce = `nonce-${++evidenceNonce}`;
+    return [requirement, {
+      requirement,
+      principal,
+      sessionId,
+      targetId: id,
+      operation,
+      inputSha256: digestInput(input),
+      issuer: 'road://identity/test-authority',
+      issuedAt: '2026-09-09T06:29:00.000Z',
+      expiresAt: '2026-09-09T06:34:00.000Z',
+      nonce,
+      proof: `signed:${nonce}`
+    }];
+  }));
+}
+
+test('contains exactly 65 uniquely classified connectors', async () => {
   const fabric = await loadFabric();
-  assert.equal(fabric.connectors.length, 62);
-  assert.equal(new Set(fabric.connectors.map(({ id }) => id)).size, 62);
-  assert.equal(Object.values(fabric.roles).flat().length, 62);
+  assert.equal(fabric.connectors.length, 65);
+  assert.equal(new Set(fabric.connectors.map(({ id }) => id)).size, 65);
+  assert.equal(Object.values(fabric.roles).flat().length, 65);
+});
+
+test('records newly connected providers without inventing live health', async () => {
+  assert.equal((await getConnector('figma')).state, 'ready');
+  assert.equal((await getConnector('outlook-email')).state, 'unverified');
+  assert.equal((await getConnector('cloudflare')).state, 'unverified');
 });
 
 test('retains the financial and secret boundaries', async () => {
@@ -45,8 +84,26 @@ test('discussion writes require complete collaboration evidence', async () => {
   assert.equal(denied.allowed, false);
   assert.ok(denied.missing.includes('explicit-user-approval'));
 
-  const evidence = Object.fromEntries(denied.requirements.map((requirement) => [requirement, true]));
-  assert.equal((await planConnectorAction('slack', 'write', evidence)).allowed, true);
+  const context = { id: 'slack', operation: 'write', inputSha256: digestInput({}), principal: 'user:alexa', sessionId: 'session-1' };
+  const evidence = signedEvidence(denied.requirements, { id: 'slack' });
+  assert.equal((await planConnectorAction('slack', 'write', evidence, { verifier: trustedVerifier(), context })).allowed, true);
+});
+
+test('caller booleans and incorrectly bound evidence never authorize writes', async () => {
+  const denied = await planConnectorAction('slack', 'write');
+  const booleans = Object.fromEntries(denied.requirements.map((requirement) => [requirement, true]));
+  const context = { id: 'slack', operation: 'write', inputSha256: digestInput({}), principal: 'user:alexa', sessionId: 'session-1' };
+  assert.equal((await planConnectorAction('slack', 'write', booleans, { verifier: trustedVerifier(), context })).reason, 'invalid-required-evidence');
+
+  const wrongTarget = signedEvidence(denied.requirements, { id: 'github' });
+  const plan = await planConnectorAction('slack', 'write', wrongTarget, { verifier: trustedVerifier(), context });
+  assert.equal(plan.allowed, false);
+  assert.ok(plan.evidenceErrors.every((error) => error.endsWith(':target-mismatch')));
+
+  const wrongPrincipal = signedEvidence(denied.requirements, { id: 'slack', principal: 'user:someone-else' });
+  const principalPlan = await planConnectorAction('slack', 'write', wrongPrincipal, { verifier: trustedVerifier(), context });
+  assert.equal(principalPlan.allowed, false);
+  assert.ok(principalPlan.evidenceErrors.every((error) => error.endsWith(':principal-mismatch')));
 });
 
 test('control writes additionally require governance', async () => {
@@ -99,51 +156,93 @@ test('blocked providers never reach their adapters', async () => {
 });
 
 test('verified writes produce input-safe receipts', async () => {
+  const input = { channel: 'internal', token: 'never-copy-this', text: 'private message' };
+  const denied = await planConnectorAction('slack', 'write');
+  const evidence = signedEvidence(denied.requirements, { id: 'slack', input });
   const runtime = new ConnectorRuntime({
-    clock: () => '2026-09-08T09:00:00.000Z',
+    clock: () => AUTH_NOW,
+    evidenceVerifier: trustedVerifier(),
     adapters: {
       slack: {
+        operations: ['write'],
         execute: async () => ({ providerId: 'message-1' }),
         verify: async () => ({ ok: true, detail: 'provider object read back' })
       }
     }
   });
-  const denied = await planConnectorAction('slack', 'write');
-  const evidence = Object.fromEntries(denied.requirements.map((requirement) => [requirement, true]));
-  const input = { channel: 'internal', token: 'never-copy-this', text: 'private message' };
-  const outcome = await runtime.execute({ id: 'slack', operation: 'write', input, evidence, dryRun: false });
+  const outcome = await runtime.execute({ id: 'slack', operation: 'write', input, evidence, principal: 'user:alexa', sessionId: 'session-1', dryRun: false });
   assert.equal(outcome.receipt.status, 'succeeded');
   assert.equal(outcome.receipt.inputSha256.length, 64);
   assert.ok(!JSON.stringify(outcome.receipt).includes(input.token));
   assert.ok(!JSON.stringify(outcome.receipt).includes(input.text));
 });
 
-test('writes cannot succeed without read-after-write verification', async () => {
-  const adapter = { execute: async () => ({ providerId: 'message-1' }) };
-  const runtime = new ConnectorRuntime({ adapters: { slack: adapter } });
-  const denied = await planConnectorAction('slack', 'write');
-  const evidence = Object.fromEntries(denied.requirements.map((requirement) => [requirement, true]));
-  const outcome = await runtime.execute({ id: 'slack', operation: 'write', evidence, dryRun: false });
-  assert.equal(outcome.receipt.status, 'failed');
-  assert.equal(outcome.receipt.reason, 'verification-not-implemented');
+test('write adapters without verification are rejected before execution', () => {
+  let calls = 0;
+  assert.throws(() => new ConnectorRuntime({
+    adapters: { slack: { operations: ['write'], execute: async () => { calls += 1; } } }
+  }), /must implement read-after-write verification/);
+  assert.equal(calls, 0);
 });
 
 test('negative read-after-write verification is a failed receipt', async () => {
   const adapter = {
+    operations: ['write'],
     execute: async () => ({ providerId: 'message-1' }),
-    verify: async () => ({ ok: false, detail: 'provider object not found' })
+    verify: async () => ({ ok: false, detail: 'token=provider-secret provider object not found' })
   };
-  const runtime = new ConnectorRuntime({ adapters: { slack: adapter } });
+  const runtime = new ConnectorRuntime({ adapters: { slack: adapter }, evidenceVerifier: trustedVerifier(), clock: () => AUTH_NOW });
   const denied = await planConnectorAction('slack', 'write');
-  const evidence = Object.fromEntries(denied.requirements.map((requirement) => [requirement, true]));
-  const outcome = await runtime.execute({ id: 'slack', operation: 'write', evidence, dryRun: false });
+  const evidence = signedEvidence(denied.requirements, { id: 'slack' });
+  const outcome = await runtime.execute({ id: 'slack', operation: 'write', evidence, principal: 'user:alexa', sessionId: 'session-1', dryRun: false });
   assert.equal(outcome.receipt.status, 'failed');
   assert.equal(outcome.receipt.reason, 'read-after-write-verification-failed');
-  assert.deepEqual(outcome.receipt.verification, { ok: false, detail: 'provider object not found' });
+  assert.deepEqual(outcome.receipt.verification, { ok: false, detail: 'token=[REDACTED] provider object not found' });
+  assert.ok(!JSON.stringify(outcome.receipt).includes('provider-secret'));
+});
+
+test('consumed write evidence cannot be replayed', async () => {
+  let calls = 0;
+  const verifier = trustedVerifier();
+  const runtime = new ConnectorRuntime({
+    clock: () => AUTH_NOW,
+    evidenceVerifier: verifier,
+    adapters: {
+      slack: {
+        operations: ['write'],
+        execute: async () => ({ providerId: `message-${++calls}` }),
+        verify: async () => ({ ok: true })
+      }
+    }
+  });
+  const denied = await planConnectorAction('slack', 'write');
+  const evidence = signedEvidence(denied.requirements, { id: 'slack' });
+  const request = { id: 'slack', operation: 'write', evidence, principal: 'user:alexa', sessionId: 'session-1', dryRun: false };
+  assert.equal((await runtime.execute(request)).receipt.status, 'succeeded');
+  const replay = await runtime.execute(request);
+  assert.equal(replay.receipt.status, 'blocked');
+  assert.equal(replay.plan.reason, 'invalid-required-evidence');
+  assert.equal(calls, 1);
+});
+
+test('concurrent replay attempts reserve evidence atomically', async () => {
+  let releaseProof;
+  const proofGate = new Promise((resolve) => { releaseProof = resolve; });
+  const verifier = new EvidenceVerifier({ clock: () => AUTH_NOW, verifyProof: async () => { await proofGate; return true; } });
+  const denied = await planConnectorAction('slack', 'write');
+  const evidence = signedEvidence(denied.requirements, { id: 'slack' });
+  const context = { id: 'slack', operation: 'write', inputSha256: digestInput({}), principal: 'user:alexa', sessionId: 'session-1' };
+  const first = verifier.verify(denied.requirements, evidence, context, { consume: true });
+  const second = verifier.verify(denied.requirements, evidence, context, { consume: true });
+  releaseProof();
+  assert.equal((await first).valid, true);
+  const rejected = await second;
+  assert.equal(rejected.valid, false);
+  assert.ok(rejected.errors.every((error) => error.endsWith(':replayed')));
 });
 
 test('probe failures expose an error class but not provider error contents', async () => {
-  const runtime = new ConnectorRuntime({ adapters: { github: { probe: async () => { throw new Error('token=secret'); } } } });
+  const runtime = new ConnectorRuntime({ adapters: { github: { execute: async () => ({}), probe: async () => { throw new Error('token=secret'); } } } });
   const probe = await runtime.probe('github');
   assert.equal(probe.reachable, false);
   assert.equal(probe.detail, 'Error');
@@ -180,10 +279,10 @@ test('provider aliases resolve one registered adapter for multiple contracts', a
 test('runtime refuses operations omitted from an adapter declaration', async () => {
   let calls = 0;
   const adapter = defineAdapter({ id: 'slack', operations: ['read'], execute: async () => { calls += 1; } });
-  const runtime = new ConnectorRuntime({ adapters: [adapter] });
+  const runtime = new ConnectorRuntime({ adapters: [adapter], evidenceVerifier: trustedVerifier(), clock: () => AUTH_NOW });
   const denied = await planConnectorAction('slack', 'write');
-  const evidence = Object.fromEntries(denied.requirements.map((requirement) => [requirement, true]));
-  const outcome = await runtime.execute({ id: 'slack', operation: 'write', evidence, dryRun: false });
+  const evidence = signedEvidence(denied.requirements, { id: 'slack' });
+  const outcome = await runtime.execute({ id: 'slack', operation: 'write', evidence, principal: 'user:alexa', sessionId: 'session-1', dryRun: false });
   assert.equal(outcome.receipt.reason, 'adapter-operation-not-supported');
   assert.equal(calls, 0);
 });
@@ -254,7 +353,71 @@ test('billing never substitutes another connector for broken Stripe', async () =
 
 test('all semantic routes reference compatible canonical connectors', async () => {
   const validation = await validateRoutingProfiles();
-  assert.deepEqual(validation, { valid: true, profiles: 12, connectorReferences: 37, errors: [] });
+  assert.deepEqual(validation, { valid: true, profiles: 13, connectorReferences: 42, errors: [] });
+});
+
+test('maps every bridge into exactly one of the eight RoadOS surfaces', async () => {
+  assert.deepEqual(await validateNativeCapabilities(), {
+    valid: true,
+    surfaces: 8,
+    capabilities: 53,
+    bridges: 65,
+    errors: []
+  });
+  const coverage = await nativeCoverage();
+  assert.equal(coverage.bridges, 65);
+  assert.equal(coverage.states.verified, 1);
+  assert.equal(coverage.states.contracted, 52);
+});
+
+test('maps every currently surfaced app family into owned RoadOS capability space', async () => {
+  assert.deepEqual(await validateAppSurfaceRegistry(), { valid: true, apps: 68, errors: [] });
+  assert.equal((await describeAppSurface('outlook-email')).nativeCapability.id, 'email');
+  assert.equal((await describeAppSurface('github')).nativeCapability.id, 'source');
+  assert.equal((await describeAppSurface('malwarebytes')).nativeCapability.id, 'security');
+});
+
+test('does not relabel an external provider as a native capability', async () => {
+  const fabric = await loadFabric();
+  const externalIds = new Set(fabric.connectors.map(({ id }) => id));
+  const targets = await Promise.all(fabric.connectors.map(({ id }) => getNativeTarget(id)));
+  assert.ok(targets.every(({ capability }) => !externalIds.has(capability.id)));
+});
+
+test('external providers are bridges to literal native capabilities', async () => {
+  const outlook = await getNativeTarget('outlook-email');
+  assert.equal(outlook.capability.surface, 'chat');
+  assert.equal(outlook.capability.id, 'email');
+  assert.equal(outlook.relationship, 'bridge-until-native-exit-gate-passes');
+
+  const figma = await getNativeTarget('figma');
+  assert.equal(figma.capability.surface, 'design');
+  assert.equal(figma.capability.id, 'design-system');
+});
+
+test('native preference is blocked until implementation and exit evidence are verified', async () => {
+  const outlook = await planNativeExit('outlook-email', {});
+  assert.equal(outlook.ready, false);
+  assert.equal(outlook.reason, 'native-capability-not-verified');
+  assert.ok(outlook.missing.includes('owned-storage'));
+  assert.ok(outlook.missing.includes('local-read'));
+  assert.ok(outlook.missing.includes('local-write'));
+
+  const analytics = await planNativeExit('amplitude', {});
+  assert.ok(analytics.requirements.includes('local-read'));
+  assert.ok(!analytics.requirements.includes('local-write'));
+});
+
+test('verified native capability still requires fresh exit evidence', async () => {
+  const plan = await planNativeExit('adapter-plane', {});
+  assert.equal(plan.nativeState, 'verified');
+  assert.equal(plan.ready, false);
+  assert.equal(plan.reason, 'missing-exit-evidence');
+
+  const evidence = Object.fromEntries(plan.requirements.map((requirement) => [requirement, true]));
+  const ready = await planNativeExit('adapter-plane', evidence);
+  assert.equal(ready.ready, true);
+  assert.equal(ready.reason, null);
 });
 
 test('equivalent writes require explicit healthy provider selection', async () => {

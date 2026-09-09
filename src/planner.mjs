@@ -2,7 +2,7 @@ import { getConnector } from './catalog.mjs';
 
 const EXECUTABLE_STATES = new Set(['ready', 'ready-empty', 'limited']);
 
-export async function planConnectorAction(id, operation, evidence = {}) {
+export async function planConnectorAction(id, operation, evidence = {}, authorization = {}) {
   const connector = await getConnector(id);
   if (!connector) return blocked(id, operation, 'unknown-connector');
   if (!['read', 'write'].includes(operation)) return blocked(id, operation, 'unknown-operation');
@@ -19,16 +19,26 @@ export async function planConnectorAction(id, operation, evidence = {}) {
   if (connector.role === 'discussion' || connector.role === 'delivery') requirements.push('explicit-user-approval');
   if (connector.role === 'control' || connector.role === 'decision') requirements.push('explicit-user-approval', 'governance-evidence');
 
-  const missing = requirements.filter((requirement) => evidence[requirement] !== true);
+  const missing = requirements.filter((requirement) => !evidence?.[requirement]);
+  let evidenceErrors = [];
+  if (missing.length === 0) {
+    if (!authorization.verifier || !authorization.context) {
+      evidenceErrors = ['trusted-verifier-required'];
+    } else {
+      const verification = await authorization.verifier.verify(requirements, evidence, authorization.context, { consume: authorization.consume === true });
+      evidenceErrors = [...verification.errors];
+    }
+  }
   return {
-    allowed: missing.length === 0,
+    allowed: missing.length === 0 && evidenceErrors.length === 0,
     id,
     operation,
     role: connector.role,
     state: connector.state,
     requirements,
     missing,
-    reason: missing.length ? 'missing-required-evidence' : null
+    evidenceErrors,
+    reason: missing.length ? 'missing-required-evidence' : evidenceErrors.length ? 'invalid-required-evidence' : null
   };
 }
 

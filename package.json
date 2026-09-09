@@ -1,6 +1,6 @@
 {
   "name": "blackroad-plugin-gateway",
-  "version": "1.9.1",
+  "version": "1.10.0",
   "private": true,
   "type": "module",
   "bin": {
@@ -12,6 +12,9 @@
     "./audit": "./src/audit.mjs",
     "./catalog": "./src/catalog.mjs",
     "./planner": "./src/planner.mjs",
+    "./evidence": "./src/evidence.mjs",
+    "./native": "./src/native.mjs",
+    "./apps": "./src/apps.mjs",
     "./capabilities": "./src/capabilities.mjs",
     "./receipt-chain": "./src/receipt-chain.mjs",
     "./mcp-adapter": "./src/mcp-adapter.mjs",

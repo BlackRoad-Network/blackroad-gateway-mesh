@@ -1,15 +1,17 @@
 import { getConnector } from './catalog.mjs';
 import { planConnectorAction } from './planner.mjs';
-import { createReceipt } from './receipt.mjs';
+import { createReceipt, digestInput } from './receipt.mjs';
 import { AdapterRegistry } from './adapter-sdk.mjs';
 
 export class ConnectorRuntime {
   #adapters;
   #clock;
+  #evidenceVerifier;
 
-  constructor({ adapters = new Map(), clock = () => new Date().toISOString() } = {}) {
+  constructor({ adapters = new Map(), clock = () => new Date().toISOString(), evidenceVerifier = null } = {}) {
     this.#adapters = adapters instanceof AdapterRegistry ? adapters : new AdapterRegistry(adapters);
     this.#clock = clock;
+    this.#evidenceVerifier = evidenceVerifier;
   }
 
   async probe(id) {
@@ -35,9 +37,10 @@ export class ConnectorRuntime {
     }
   }
 
-  async execute({ id, operation, input = {}, evidence = {}, dryRun = true }) {
+  async execute({ id, operation, input = {}, evidence = {}, principal = null, sessionId = null, dryRun = true }) {
     const timestamp = this.#clock();
-    const plan = await planConnectorAction(id, operation, evidence);
+    const context = { id, operation, inputSha256: digestInput(input), principal, sessionId };
+    let plan = await planConnectorAction(id, operation, evidence, { verifier: this.#evidenceVerifier, context });
     if (!plan.allowed) return { plan, receipt: createReceipt({ id, operation, status: 'blocked', reason: plan.reason, input, timestamp }) };
     if (dryRun) return { plan, receipt: createReceipt({ id, operation, status: 'planned', reason: 'dry-run', input, timestamp }) };
 
@@ -46,16 +49,21 @@ export class ConnectorRuntime {
     if (!adapter?.execute) {
       return { plan, receipt: createReceipt({ id, operation, status: 'blocked', reason: 'adapter-not-registered', input, timestamp }) };
     }
-    if (Array.isArray(adapter.operations) && !adapter.operations.includes(operation)) {
+    if (!adapter.operations.includes(operation)) {
       return { plan, receipt: createReceipt({ id, operation, status: 'blocked', reason: 'adapter-operation-not-supported', input, timestamp }) };
+    }
+    if (operation === 'write' && typeof adapter.verify !== 'function') {
+      return { plan, receipt: createReceipt({ id, operation, status: 'blocked', reason: 'verification-not-implemented', input, timestamp }) };
+    }
+
+    if (operation === 'write') {
+      plan = await planConnectorAction(id, operation, evidence, { verifier: this.#evidenceVerifier, context, consume: true });
+      if (!plan.allowed) return { plan, receipt: createReceipt({ id, operation, status: 'blocked', reason: plan.reason, input, timestamp }) };
     }
 
     try {
       const result = await adapter.execute({ connector, operation, input });
       if (operation === 'write') {
-        if (!adapter.verify) {
-          return { plan, result, receipt: createReceipt({ id, operation, status: 'failed', reason: 'verification-not-implemented', input, timestamp }) };
-        }
         const verification = await adapter.verify({ connector, operation, input, result });
         if (verification?.ok !== true) {
           return { plan, result, receipt: createReceipt({ id, operation, status: 'failed', reason: 'read-after-write-verification-failed', input, verification: publicVerification(verification), timestamp }) };
@@ -71,7 +79,16 @@ export class ConnectorRuntime {
 
 function publicVerification(verification) {
   if (!verification) return null;
-  return { ok: verification.ok === true, detail: typeof verification.detail === 'string' ? verification.detail : null };
+  return { ok: verification.ok === true, detail: publicDetail(verification.detail) };
+}
+
+function publicDetail(value) {
+  if (typeof value !== 'string') return null;
+  return value
+    .replace(/Bearer\s+\S+/gi, 'Bearer [REDACTED]')
+    .replace(/\b(token|password|passwd|secret|api[_-]?key)\s*[:=]\s*\S+/gi, '$1=[REDACTED]')
+    .replace(/[\r\n]+/g, ' ')
+    .slice(0, 240);
 }
 
 function safeError(error) {
