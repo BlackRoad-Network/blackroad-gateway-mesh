@@ -20,6 +20,15 @@ const VERBS = Object.freeze({
   handoff: "HANDOFF"
 });
 
+const GITHUB_PR_ACTIONS = Object.freeze({
+  opened: "OPENED",
+  ready_for_review: "READY",
+  synchronize: "UPDATED",
+  reopened: "UPDATED",
+  edited: "UPDATED",
+  converted_to_draft: "UPDATED"
+});
+
 const HIGH_RISK = Object.freeze([
   ["DESTRUCTIVE", /\b(delete|destroy|purge|erase|drop|wipe)\b/i],
   ["ADMIN", /\b(admin|owner|root|sudo|policy)\b/i],
@@ -151,7 +160,7 @@ export function normalizeGitHubPullRequestEvent(event) {
     return { accepted: false, state: "IGNORED_WRONG_REPOSITORY" };
   }
 
-  const action = clean(event?.action);
+  const action = clean(event?.action).toLowerCase();
   const number = Number(event?.pull_request?.number ?? event?.number);
   const delivery = clean(event?.delivery_id) || clean(event?.event_id);
 
@@ -159,21 +168,54 @@ export function normalizeGitHubPullRequestEvent(event) {
     return { accepted: false, state: "BLOCKED_INVALID_EVENT" };
   }
 
+  const merged = event?.pull_request?.merged === true;
+  const classification = action === "closed"
+    ? merged ? "MERGED" : "CLOSED"
+    : GITHUB_PR_ACTIONS[action];
+
+  if (!classification) {
+    return {
+      accepted: false,
+      state: "BLOCKED_UNSUPPORTED_ACTION",
+      action
+    };
+  }
+
+  const eventVersion = clean(event?.pull_request?.head?.sha)
+    || clean(event?.pull_request?.updated_at)
+    || `${action}:${merged ? "merged" : "unmerged"}`;
+  const semanticIdempotencyKey = sha256([
+    "github-pr",
+    COCKPIT.githubRepository,
+    number,
+    classification,
+    eventVersion
+  ].join(":"));
+  const deliveryIdempotencyKey = sha256([
+    "github-delivery",
+    COCKPIT.githubRepository,
+    delivery
+  ].join(":"));
+
   return {
     accepted: true,
     state: "READY_TO_REPORT",
     kind: "GITHUB_PULL_REQUEST_EVENT",
+    classification,
     source: {
       provider: "github",
       repository: COCKPIT.githubRepository,
       action,
       pullRequest: number,
-      delivery
+      delivery,
+      eventVersion
     },
     destination: `road+connector://slack/channel/${COCKPIT.channelId}`,
     marker: `[github:${COCKPIT.githubRepository}#${number}]`,
     automaticProviderMutations: [],
-    idempotencyKey: sha256(["github", COCKPIT.githubRepository, number, action, delivery].join(":"))
+    idempotencyKey: semanticIdempotencyKey,
+    semanticIdempotencyKey,
+    deliveryIdempotencyKey
   };
 }
 
