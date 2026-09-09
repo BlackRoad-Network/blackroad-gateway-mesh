@@ -8,6 +8,7 @@ import {
   normalizeSlackEvent,
   parseRoadCommand,
   planGitHubSlackDelivery,
+  planSlackCommandIntake,
   planOllamaDispatch
 } from "./slack-control-plane.mjs";
 
@@ -24,6 +25,15 @@ test("accepts a bounded read", () => {
   assert.equal(result.accepted, true);
   assert.equal(result.actionClass, "READ");
   assert.equal(result.requiresApproval, false);
+});
+
+test("rejects secret-like material without returning the target", () => {
+  const result = parseRoadCommand(
+    "road run github token=github_pat_abcdefghijklmnopqrstuvwxyz1234"
+  );
+  assert.equal(result.accepted, false);
+  assert.equal(result.state, "BLOCKED_SECRET_MATERIAL");
+  assert.equal("target" in result, false);
 });
 
 test("requires strong approval for deployment or public exposure", () => {
@@ -82,6 +92,115 @@ test("ignores bot self-echo", () => {
     text: "road status github"
   });
   assert.equal(result.state, "IGNORED_SELF_ECHO");
+});
+
+test("keeps Slack command intake blocked until inbound is verified", () => {
+  const event = normalizeSlackEvent({
+    event_id: "Ev-intake-blocked",
+    ts: "1788946000.123456",
+    channel: COCKPIT.channelId,
+    user: COCKPIT.operatorUserId,
+    text: "road status github"
+  });
+  const plan = planSlackCommandIntake(event);
+  assert.equal(plan.state, "BLOCKED_INBOUND_UNVERIFIED");
+  assert.equal(plan.shouldDispatch, false);
+});
+
+test("plans a verified read in the exact Slack thread", () => {
+  const event = normalizeSlackEvent({
+    event_id: "Ev-intake-read",
+    ts: "1788946001.123456",
+    thread_ts: "1788945900.654321",
+    channel: COCKPIT.channelId,
+    user: COCKPIT.operatorUserId,
+    text: "road status github"
+  });
+  const plan = planSlackCommandIntake(event, {
+    inboundSubscriptionVerified: true
+  });
+  assert.equal(plan.state, "READY_TO_DISPATCH");
+  assert.equal(plan.actionClass, "READ");
+  assert.equal(plan.operationThreadTs, "1788945900.654321");
+  assert.equal(plan.rawContentPersisted, false);
+  assert.deepEqual(plan.automaticProviderMutations, []);
+});
+
+test("deduplicates a recorded Slack command", () => {
+  const event = normalizeSlackEvent({
+    event_id: "Ev-intake-once",
+    ts: "1788946002.123456",
+    channel: COCKPIT.channelId,
+    user: COCKPIT.operatorUserId,
+    text: "road status tailscale"
+  });
+  const plan = planSlackCommandIntake(event, {
+    inboundSubscriptionVerified: true,
+    seenCanonicalEventIds: [event.canonicalEventId]
+  });
+  assert.equal(plan.state, "NOOP_DUPLICATE_COMMAND");
+  assert.equal(plan.shouldDispatch, false);
+});
+
+test("binds approval to the command hash, event, and thread", () => {
+  const event = normalizeSlackEvent({
+    event_id: "Ev-intake-run",
+    ts: "1788946003.123456",
+    channel: COCKPIT.channelId,
+    user: COCKPIT.operatorUserId,
+    text: "road run approved-plan-1729"
+  });
+  const stale = planSlackCommandIntake(event, {
+    inboundSubscriptionVerified: true,
+    approval: {
+      approved: true,
+      canonicalEventId: event.canonicalEventId,
+      contentHash: "sha256:stale",
+      threadTs: event.thread
+    }
+  });
+  const approved = planSlackCommandIntake(event, {
+    inboundSubscriptionVerified: true,
+    approval: {
+      approved: true,
+      canonicalEventId: event.canonicalEventId,
+      contentHash: event.contentHash,
+      threadTs: event.thread
+    }
+  });
+  assert.equal(stale.state, "AWAITING_AUTHORIZATION");
+  assert.equal(approved.state, "READY_TO_DISPATCH");
+});
+
+test("requires strong approval for high-risk Slack commands", () => {
+  const event = normalizeSlackEvent({
+    event_id: "Ev-intake-deploy",
+    ts: "1788946004.123456",
+    channel: COCKPIT.channelId,
+    user: COCKPIT.operatorUserId,
+    text: "road run deploy service"
+  });
+  const weak = {
+    inboundSubscriptionVerified: true,
+    approval: {
+      approved: true,
+      canonicalEventId: event.canonicalEventId,
+      contentHash: event.contentHash,
+      threadTs: event.thread,
+      strength: "NORMAL"
+    }
+  };
+  assert.equal(
+    planSlackCommandIntake(event, weak).state,
+    "AWAITING_STRONG_AUTHORIZATION"
+  );
+  assert.equal(
+    planSlackCommandIntake(event, {
+      ...weak,
+      approval: { ...weak.approval, strength: "STRONG" }
+    }).state,
+    "READY_TO_DISPATCH"
+  );
 });
 
 test("routes only canonical gateway pull-request events", () => {
