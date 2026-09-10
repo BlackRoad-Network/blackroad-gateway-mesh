@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration-resource/v1",
+  "title": "BlackRoad Shared Resource Observation",
+  "type": "object",
+  "required": ["resourceKey", "connectorId", "updatedAt"],
+  "properties": {
+    "resourceKey": { "type": "string", "minLength": 1 },
+    "connectorId": { "type": "string", "minLength": 1 },
+    "versionRef": { "type": ["string", "null"] },
+    "lastIntentId": { "type": ["string", "null"] },
+    "lastInvocationId": { "type": ["string", "null"] },
+    "lastObservedByAgentId": { "type": ["string", "null"] },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

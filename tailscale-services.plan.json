@@ -1,0 +1,15 @@
+{
+  "schema": "road-tailscale-services-v1",
+  "defaultVisibility": "tailnet-only",
+  "publicExposure": "explicit-funnel-only",
+  "services": [
+    {"roadUri":"road://gateway","tailscale":"svc:blackroad-gateway","purpose":"gateway resolver and health"},
+    {"roadUri":"road://service/forge","tailscale":"svc:forge","purpose":"Forgejo / source control"},
+    {"roadUri":"road://service/roadie","tailscale":"svc:roadie","purpose":"Roadie agent runtime"},
+    {"roadUri":"road://service/identity","tailscale":"svc:identity","purpose":"identity and capability service","preferredPort":1729},
+    {"roadUri":"road://service/devices","tailscale":"svc:devices","purpose":"device registry and discovery"},
+    {"roadUri":"road://service/integrations","tailscale":"svc:integrations","purpose":"connector provider adapters"},
+    {"roadUri":"road://service/models","tailscale":"svc:models","purpose":"model routing and inference"},
+    {"roadUri":"road://service/receipts","tailscale":"svc:receipts","purpose":"receipts and provenance"}
+  ]
+}

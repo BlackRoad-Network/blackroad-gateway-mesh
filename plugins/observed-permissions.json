@@ -1,0 +1,92 @@
+{
+  "schema": "road-plugin-permission-observation-v1",
+  "observedAt": "2026-09-02",
+  "globalPermission": "review_important_actions",
+  "globalPermissionLabel": "Allow low-risk actions",
+  "mutationsAppliedByThisPass": false,
+  "observations": [
+    {
+      "pluginId": "netlify",
+      "status": "installed",
+      "actualMode": "full_access",
+      "actualLabel": "Allow all actions",
+      "recommendedMode": "always_ask",
+      "drift": "HIGH"
+    },
+    {
+      "pluginId": "github",
+      "status": "installed",
+      "actualMode": "full_access",
+      "actualLabel": "Allow all actions",
+      "recommendedMode": "review_important_actions",
+      "drift": "HIGH"
+    },
+    {
+      "pluginId": "neura-relay",
+      "status": "installed",
+      "actualMode": "full_access",
+      "actualLabel": "Allow all actions",
+      "recommendedMode": "ask_before_writes",
+      "drift": "MEDIUM"
+    },
+    {
+      "pluginId": "digitalocean",
+      "status": "installed",
+      "actualMode": "inherit",
+      "actualLabel": "Use my default",
+      "recommendedMode": "always_ask",
+      "drift": "MEDIUM"
+    },
+    {
+      "pluginId": "stripe",
+      "status": "installed",
+      "actualMode": "inherit",
+      "actualLabel": "Use my default",
+      "recommendedMode": "always_ask",
+      "drift": "MEDIUM"
+    },
+    {
+      "pluginId": "resend",
+      "status": "installed",
+      "actualMode": "inherit",
+      "actualLabel": "Use my default",
+      "recommendedMode": "review_important_actions",
+      "drift": "NONE"
+    },
+    {
+      "pluginId": "webflow",
+      "status": "installed",
+      "actualMode": "inherit",
+      "actualLabel": "Use my default",
+      "recommendedMode": "always_ask",
+      "drift": "MEDIUM"
+    },
+    {
+      "pluginId": "workos",
+      "status": "installed",
+      "actualMode": "inherit",
+      "actualLabel": "Use my default",
+      "recommendedMode": "always_ask",
+      "drift": "MEDIUM"
+    },
+    {
+      "pluginId": "1password",
+      "status": "skill-installed-chatgpt-app-not-installed",
+      "actualMode": null,
+      "recommendedMode": "always_ask",
+      "drift": "CONNECTION_REQUIRED"
+    },
+    {
+      "pluginId": "tailscale",
+      "status": "skill-installed-chatgpt-app-not-installed",
+      "actualMode": null,
+      "recommendedMode": "always_ask",
+      "drift": "CONNECTION_REQUIRED"
+    }
+  ],
+  "invariants": [
+    "observation-does-not-change-permissions",
+    "repository-policy-is-not-platform-setting",
+    "explicit-mode-required-before-permission-mutation"
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/connector-operation/v1",
+  "title": "BlackRoad Connector Operation Envelope",
+  "type": "object",
+  "required": [
+    "operationId",
+    "agentId",
+    "sessionRef",
+    "connectorId",
+    "actionClass",
+    "resourceKey",
+    "state"
+  ],
+  "properties": {
+    "operationId": {"type":"string","minLength":1},
+    "workflowId": {"type":["string","null"]},
+    "intentId": {"type":["string","null"]},
+    "claimId": {"type":["string","null"]},
+    "invocationId": {"type":["string","null"]},
+    "agentId": {"type":"string","pattern":"^(connector-orchestrator|agent-instance-[1-6])$"},
+    "sessionRef": {"type":"string","minLength":1},
+    "connectorId": {"type":"string","minLength":1},
+    "toolName": {"type":["string","null"]},
+    "actionClass": {"enum":["OBSERVE","READ","WRITE","COMMUNICATE","DEPLOY","ADMIN","SECRET","PUBLIC_EXPOSE"]},
+    "resourceKey": {"type":"string","minLength":1},
+    "targetOwnerAgent": {"type":["string","null"],"pattern":"^(connector-orchestrator|agent-instance-[1-6])$"},
+    "idempotencyKey": {"type":["string","null"]},
+    "requestHash": {"type":["string","null"]},
+    "expectedResourceVersionRef": {"type":["string","null"]},
+    "observedResourceVersionRef": {"type":["string","null"]},
+    "decisionReceiptRef": {"type":["string","null"]},
+    "userApprovalRef": {"type":["string","null"]},
+    "providerRequestRef": {"type":["string","null"]},
+    "effectRefs": {"type":"array","items":{"type":"string"},"default":[]},
+    "evidenceRefs": {"type":"array","items":{"type":"string"},"default":[]},
+    "receiptId": {"type":["string","null"]},
+    "state": {"enum":["PROPOSED","BLOCKED","CLAIMED","EXECUTING","PROVIDER_ACKNOWLEDGED","VERIFYING","VERIFIED","SUCCEEDED","FAILED","TIMEOUT_UNKNOWN","PARTIAL","CANCELLED"]}
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {"properties":{"actionClass":{"enum":["WRITE","COMMUNICATE","DEPLOY","ADMIN","SECRET","PUBLIC_EXPOSE"]}},"required":["actionClass"]},
+      "then": {"required":["intentId","claimId","targetOwnerAgent","idempotencyKey","requestHash"]}
+    },
+    {
+      "if": {"properties":{"state":{"enum":["VERIFIED","SUCCEEDED"]},"actionClass":{"enum":["WRITE","COMMUNICATE","DEPLOY","ADMIN","SECRET","PUBLIC_EXPOSE"]}},"required":["state","actionClass"]},
+      "then": {"required":["invocationId","observedResourceVersionRef","evidenceRefs"]}
+    },
+    {
+      "if": {"properties":{"state":{"const":"SUCCEEDED"},"actionClass":{"enum":["WRITE","COMMUNICATE","DEPLOY","ADMIN","SECRET","PUBLIC_EXPOSE"]}},"required":["state","actionClass"]},
+      "then": {"required":["receiptId"]}
+    }
+  ]
+}

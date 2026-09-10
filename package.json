@@ -1,0 +1,7 @@
+{
+  "name": "blackroad-plugin-gateway",
+  "private": true,
+  "dependencies": {
+    "@netlify/edge-functions": "latest"
+  }
+}

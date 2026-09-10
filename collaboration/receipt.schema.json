@@ -1,0 +1,32 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"road://schema/collaboration-receipt/v1",
+  "title":"BlackRoad Connector Receipt",
+  "type":"object",
+  "required":["id","intentId","agentId","connectorId","actionClass","resourceKey","outcome","recordedAt"],
+  "properties":{
+    "id":{"type":"string","minLength":1},
+    "intentId":{"type":"string","minLength":1},
+    "claimId":{"type":["string","null"]},
+    "invocationId":{"type":["string","null"]},
+    "workflowId":{"type":["string","null"]},
+    "agentId":{"type":"string","pattern":"^(connector-orchestrator|agent-instance-[1-6])$"},
+    "sessionRef":{"type":["string","null"]},
+    "connectorId":{"type":"string","minLength":1},
+    "actionClass":{"enum":["OBSERVE","READ","WRITE","COMMUNICATE","DEPLOY","ADMIN","SECRET","PUBLIC_EXPOSE"]},
+    "resourceKey":{"type":"string","minLength":1},
+    "outcome":{"enum":["SUCCEEDED","FAILED","TIMEOUT_UNKNOWN","BLOCKED","PARTIAL","CANCELLED"]},
+    "providerRequestRef":{"type":["string","null"]},
+    "decisionReceiptRef":{"type":["string","null"]},
+    "evidenceRefs":{"type":"array","items":{"type":"string"}},
+    "validationRefs":{"type":"array","items":{"type":"string"}},
+    "errorClass":{"type":["string","null"]},
+    "summary":{"type":["string","null"]},
+    "recordedAt":{"type":"string","format":"date-time"}
+  },
+  "additionalProperties":false,
+  "allOf":[{
+    "if":{"properties":{"outcome":{"const":"SUCCEEDED"},"actionClass":{"enum":["WRITE","COMMUNICATE","DEPLOY","ADMIN","SECRET","PUBLIC_EXPOSE"]}},"required":["outcome","actionClass"]},
+    "then":{"required":["sessionRef","invocationId","evidenceRefs"]}
+  }]
+}

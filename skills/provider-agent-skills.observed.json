@@ -1,0 +1,16 @@
+{
+  "schema": "road-provider-agent-skill-observation-v1",
+  "observedAt": "2026-09-02T14:00:00Z",
+  "providers": [
+    {
+      "provider": "linear",
+      "connectionState": "CONNECTED",
+      "configuredAgentSkillCount": 0,
+      "status": "READY_EMPTY",
+      "evidence": "Linear list_agent_skills returned an empty collection successfully.",
+      "note": "This means no Linear-native Agent skills are configured. It does not negate Linear connector access or BlackRoad's six repository agent profiles."
+    }
+  ],
+  "blackroadRepositoryProfiles": 6,
+  "profilesAreProviderAgentSkills": false
+}

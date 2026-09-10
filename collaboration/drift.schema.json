@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration-drift/v1",
+  "title": "BlackRoad External Resource Drift",
+  "type": "object",
+  "required": [
+    "id",
+    "resourceKey",
+    "connectorId",
+    "previousVersionRef",
+    "observedVersionRef",
+    "observedByAgentId",
+    "evidenceRefs",
+    "state",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "resourceKey": {"type": "string", "minLength": 1},
+    "connectorId": {"type": "string", "minLength": 1},
+    "previousVersionRef": {"type": "string", "minLength": 1},
+    "observedVersionRef": {"type": "string", "minLength": 1},
+    "observedByAgentId": {"type": "string", "pattern": "^(connector-orchestrator|agent-instance-[1-6])$"},
+    "observedSessionRef": {"type": "string", "minLength": 1},
+    "sourceActorRef": {"type": ["string", "null"]},
+    "evidenceRefs": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "affectedClaimIds": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "affectedIntentIds": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "conflictIds": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "state": {"enum": ["OPEN", "RECONCILED", "SUPERSEDED"]},
+    "resolution": {"type": ["string", "null"], "enum": ["ACCEPT_REMOTE", "REPLAN", "SUPERSEDED", "NO_ACTION", null]},
+    "resultRef": {"type": ["string", "null"]},
+    "resolvedByAgentId": {"type": ["string", "null"]},
+    "resolvedSessionRef": {"type": ["string", "null"]},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "updatedAt": {"type": "string", "format": "date-time"},
+    "resolvedAt": {"type": ["string", "null"]}
+  },
+  "additionalProperties": false
+}

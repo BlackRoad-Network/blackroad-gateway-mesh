@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/platform-plugin-permissions-observation/v1",
+  "title": "BlackRoad Platform Plugin Permission Observation",
+  "type": "object",
+  "required": ["schema", "observedAt", "freshness", "globalDefault", "apps", "invariants"],
+  "properties": {
+    "schema": {"const": "road-platform-plugin-permissions-observation-v1"},
+    "observedAt": {"type": "string", "format": "date-time"},
+    "freshness": {"type": "string"},
+    "source": {"type": "string"},
+    "globalDefault": {
+      "type": "object",
+      "required": ["mode", "description"],
+      "properties": {"mode": {"type": "string"}, "description": {"type": "string"}},
+      "additionalProperties": false
+    },
+    "disclosure": {"type": "string"},
+    "apps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "appName", "appState", "permissionMode", "skillState", "currentToolSurface", "mutationState", "governance"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+          "appName": {"type": "string"},
+          "appState": {"enum": ["INSTALLED", "NOT_INSTALLED"]},
+          "permissionMode": {"type": "string"},
+          "skillState": {"type": "string"},
+          "currentToolSurface": {"type": "string"},
+          "mutationState": {"type": "string"},
+          "governance": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "invariants": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+  },
+  "additionalProperties": false
+}

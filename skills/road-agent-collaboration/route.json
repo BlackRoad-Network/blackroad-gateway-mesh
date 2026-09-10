@@ -1,0 +1,30 @@
+{
+  "schema": "road-skill-route-v1",
+  "id": "road-agent-collaboration",
+  "label": "Road Agent Collaboration",
+  "provider": "blackroad",
+  "category": "orchestration",
+  "primarySkill": "repository://skills/road-agent-collaboration/SKILL.md",
+  "mutates": "conditional",
+  "authority": "collaboration-claim-and-provider-auth",
+  "locality": "hybrid",
+  "supportingSkills": [
+    "skills://plugins/get-fable/fable-handoff/skill.md",
+    "skills://plugins/get-fable/fable-verify/skill.md"
+  ],
+  "triggers": [
+    "agent collaboration",
+    "connector collaboration",
+    "multiple agents",
+    "shared connector",
+    "cross-connector workflow",
+    "handoff between agents",
+    "claim before write",
+    "tool call coordination"
+  ],
+  "negativeTriggers": [
+    "single read-only provider lookup",
+    "ordinary local file edit with one actor"
+  ],
+  "requiredForAgentProviderWrites": true
+}

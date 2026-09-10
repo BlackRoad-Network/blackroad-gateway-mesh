@@ -1,0 +1,36 @@
+{
+  "schema": "road-plugin-skill-backend-counts-v1",
+  "version": "0.5.0",
+  "services": 61,
+  "pluginCatalogEntries": 82,
+  "plugins": 82,
+  "skillRoutes": 32,
+  "observedSkillResources": 312,
+  "adapters": 61,
+  "agents": 6,
+  "capabilities": 116,
+  "permissionOverrides": 17,
+  "statusCounts": {
+    "ACCOUNT_REQUIRED": 2,
+    "AUTH_FAILED": 2,
+    "AUTH_REQUIRED": 1,
+    "CONFIG_REQUIRED": 3,
+    "FORBIDDEN": 1,
+    "INACTIVE": 6,
+    "LIMIT_REQUIRED": 1,
+    "LOCAL_BRIDGE": 5,
+    "MISCONFIGURED": 1,
+    "POLICY_BLOCKED": 1,
+    "READY": 27,
+    "READY_EMPTY": 6,
+    "TIMEOUT_UNKNOWN": 1,
+    "UNVERIFIED": 4
+  },
+  "safety": [
+    "authentication-is-not-authorization",
+    "skill-availability-is-not-actor-authority",
+    "secret-values-never-enter-public-metadata",
+    "public-gateway-execution-disabled",
+    "public-deployment-blocked-by-neura-stop"
+  ]
+}

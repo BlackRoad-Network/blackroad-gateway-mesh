@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "road://schema/collaboration-work-item/v1",
+  "title": "BlackRoad Collaboration Work Item",
+  "type": "object",
+  "required": ["id", "workflowId", "stepId", "ownerAgentId", "actionClass", "state", "dependencyIds", "createdAt", "updatedAt"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "workflowId": { "type": "string", "minLength": 1 },
+    "stepId": { "type": "string", "minLength": 1 },
+    "ownerAgentId": { "type": "string", "pattern": "^(connector-orchestrator|agent-instance-[1-6])$" },
+    "previousOwnerAgentId": { "type": ["string", "null"], "pattern": "^(connector-orchestrator|agent-instance-[1-6])$" },
+    "connectorId": { "type": ["string", "null"] },
+    "connectorProfile": { "type": ["string", "null"] },
+    "actionClass": { "enum": ["OBSERVE", "READ", "WRITE", "COMMUNICATE", "DEPLOY", "ADMIN", "SECRET", "PUBLIC_EXPOSE"] },
+    "resourceKey": { "type": ["string", "null"] },
+    "state": { "enum": ["BLOCKED", "READY", "CLAIMED", "RUNNING", "VERIFYING", "SUCCEEDED", "FAILED", "TIMEOUT_UNKNOWN", "CANCELLED"] },
+    "dependencyIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+    "requiresVerifiedDependencies": { "type": "boolean" },
+    "sessionRef": { "type": ["string", "null"] },
+    "claimId": { "type": ["string", "null"] },
+    "expectedResourceVersionRef": { "type": ["string", "null"] },
+    "observedResourceVersionRef": { "type": ["string", "null"] },
+    "verificationRef": { "type": ["string", "null"] },
+    "resultRef": { "type": ["string", "null"] },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "startedAt": { "type": ["string", "null"] },
+    "completedAt": { "type": ["string", "null"] }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,29 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"road://schema/collaboration-handoff/v1",
+  "title":"BlackRoad Addressed Agent Handoff",
+  "type":"object",
+  "required":["id","fromAgentId","toAgentId","state","createdAt"],
+  "properties":{
+    "id":{"type":"string","minLength":1},
+    "fromAgentId":{"type":"string","pattern":"^(connector-orchestrator|agent-instance-[1-6])$"},
+    "toAgentId":{"type":"string","pattern":"^(connector-orchestrator|agent-instance-[1-6])$"},
+    "workflowId":{"type":["string","null"]},
+    "intentId":{"type":["string","null"]},
+    "connectorId":{"type":["string","null"]},
+    "resourceKey":{"type":["string","null"]},
+    "resourceVersionRef":{"type":["string","null"]},
+    "summary":{"type":["string","null"]},
+    "artifactRefs":{"type":"array","items":{"type":"string"}},
+    "evidenceRefs":{"type":"array","items":{"type":"string"}},
+    "requestedAction":{"type":["string","null"]},
+    "claimId":{"type":["string","null"]},
+    "claimExpiresAt":{"type":["string","null"],"format":"date-time"},
+    "state":{"enum":["OPEN","ACKNOWLEDGED","COMPLETED","REJECTED"]},
+    "createdAt":{"type":"string","format":"date-time"},
+    "acknowledgedAt":{"type":["string","null"],"format":"date-time"},
+    "completedAt":{"type":["string","null"],"format":"date-time"},
+    "resultRef":{"type":["string","null"]}
+  },
+  "additionalProperties":false
+}

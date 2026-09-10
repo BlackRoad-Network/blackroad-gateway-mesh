@@ -1,0 +1,34 @@
+{
+  "schema": "blackroad-neura-passport-request-v1",
+  "participant": {
+    "participant_ref": "blackroad-gateway",
+    "display_name": "BlackRoad Gateway",
+    "owner_ref": "alexa",
+    "participant_kind": "service",
+    "participation_mode": "operator-controlled",
+    "requested_status": "active"
+  },
+  "capability": {
+    "capability_ref": "gateway.registry.deploy",
+    "capability_version_ref": "gateway.registry.deploy@1",
+    "version": "1",
+    "authority_scope": [
+      "read connector registry",
+      "publish non-secret gateway metadata",
+      "publish health and capability indexes"
+    ],
+    "explicitly_excluded": [
+      "provider credential disclosure",
+      "provider writes without separate authority",
+      "public secret proxying",
+      "automatic Funnel exposure"
+    ]
+  },
+  "evidence": [
+    "Netlify site ffcf1f12-619e-4999-a3bd-3e7dc89ac308 exists",
+    "gateway source compiles under local Netlify-compatible type stub",
+    "public gateway is read-only",
+    "provider secrets are not included in registry output"
+  ],
+  "current_blocker": "Neura Registry reports participant_not_found and capability_version_not_found"
+}

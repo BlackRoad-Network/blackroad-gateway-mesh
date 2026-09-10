@@ -1,0 +1,21 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"road://schema/collaboration-workflow/v1",
+  "title":"BlackRoad Cross-Connector Workflow",
+  "type":"object",
+  "required":["id","ownerAgentId","integrationOwnerAgent","state","createdAt"],
+  "properties":{
+    "id":{"type":"string","minLength":1},
+    "ownerAgentId":{"type":"string","pattern":"^(connector-orchestrator|agent-instance-[1-6])$"},
+    "integrationOwnerAgent":{"type":"string","pattern":"^(connector-orchestrator|agent-instance-[1-6])$"},
+    "participants":{"type":"array","items":{"type":"string","pattern":"^(connector-orchestrator|agent-instance-[1-6])$"},"uniqueItems":true},
+    "delegationContractRef":{"type":["string","null"]},
+    "idempotencyKey":{"type":["string","null"]},
+    "summary":{"type":["string","null"]},
+    "state":{"enum":["ACTIVE","BLOCKED","PARTIAL","SUCCEEDED","FAILED","CANCELLED"]},
+    "intentIds":{"type":"array","items":{"type":"string"},"uniqueItems":true},
+    "createdAt":{"type":"string","format":"date-time"},
+    "updatedAt":{"type":["string","null"],"format":"date-time"}
+  },
+  "additionalProperties":false
+}

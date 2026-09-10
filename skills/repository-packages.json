@@ -1,0 +1,32 @@
+{
+  "schema": "road-repository-skill-packages-v1",
+  "packages": [
+    {
+      "id": "road-gateway-backend",
+      "version": "1.0.0",
+      "path": "skills/road-gateway-backend/SKILL.md",
+      "class": "orchestrator",
+      "evalFamilies": 8,
+      "progressiveReference": "skills/road-gateway-backend/references/authority-and-status.md",
+      "status": "IMPLEMENTED_LOCAL_PACKAGE"
+    },
+    {
+      "id": "road-connected-provider",
+      "version": "1.0.0",
+      "path": "skills/road-connected-provider/SKILL.md",
+      "class": "orchestrator",
+      "evalFamilies": 8,
+      "progressiveReference": "skills/road-connected-provider/references/provider-operation-protocol.md",
+      "status": "IMPLEMENTED_LOCAL_PACKAGE"
+    },
+    {
+      "id": "road-agent-collaboration",
+      "version": "1.0.0",
+      "path": "skills/road-agent-collaboration/SKILL.md",
+      "class": "orchestrator",
+      "evalFamilies": 10,
+      "progressiveReference": "skills/road-agent-collaboration/references/collaboration-protocol.md",
+      "status": "IMPLEMENTED_LOCAL_PACKAGE"
+    }
+  ]
+}
