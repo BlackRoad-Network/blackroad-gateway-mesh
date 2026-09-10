@@ -1,0 +1,133 @@
+{
+  "schema": "road-slack-orchestration-control-plane-v1",
+  "version": "1.0.0",
+  "authority": {
+    "system": "RoadOS",
+    "operator": "Alexa",
+    "cockpit": "slack",
+    "rule": "Slack presents and transports orchestration; it does not become canonical authority or memory."
+  },
+  "cockpit": {
+    "workspace": {
+      "providerId": "T09BC6BSEDV",
+      "roadUri": "road+connector://slack/workspace/T09BC6BSEDV",
+      "name": "BlackRoad Inc."
+    },
+    "channel": {
+      "providerId": "C0A2M4K8WLB",
+      "roadUri": "road+connector://slack/channel/C0A2M4K8WLB",
+      "name": "agent-hub"
+    },
+    "canvas": {
+      "providerId": "F0C0GUEDXL6",
+      "roadUri": "road+connector://slack/canvas/F0C0GUEDXL6",
+      "title": "RoadOS Orchestration Control Plane"
+    },
+    "verifiedMessage": {
+      "providerId": "1788943756.716919",
+      "state": "COMPLETED",
+      "verification": "PROVIDER_NATIVE_READ_BACK"
+    }
+  },
+  "commands": {
+    "prefix": "road",
+    "verbs": {
+      "status": "READ",
+      "plan": "PLAN",
+      "run": "EXECUTE",
+      "verify": "VERIFY",
+      "receipt": "READ",
+      "stop": "STOP",
+      "reconcile": "RECONCILE",
+      "handoff": "HANDOFF"
+    },
+    "unknownVerb": "BLOCKED_UNKNOWN_COMMAND"
+  },
+  "connectors": {
+    "slack": {
+      "role": "cockpit",
+      "binding": "road+connector://slack/workspace/T09BC6BSEDV/channel/C0A2M4K8WLB",
+      "state": "OUTBOUND_VERIFIED",
+      "inboundState": "EVENT_SUBSCRIPTION_NOT_RECOGNIZED",
+      "allowedAutomaticActions": ["READ"],
+      "mutations": "EXPLICIT_INTENT_AND_POLICY"
+    },
+    "github": {
+      "role": "code-and-event-provider",
+      "binding": "road+connector://github/repository/BlackRoad-Network/blackroad-gateway-mesh",
+      "state": "PR_EVENT_ROUTE_ENABLED",
+      "events": ["opened", "ready_for_review", "closed", "synchronize", "review_submitted", "comment_created"],
+      "slackDestination": "road+connector://slack/channel/C0A2M4K8WLB",
+      "automaticMutations": []
+    },
+    "tailscale": {
+      "role": "private-transport",
+      "binding": "road://service/network",
+      "state": "DEFINED_NOT_OBSERVED",
+      "visibility": "tailnet-only",
+      "policyPrimitive": "grants",
+      "publicFunnel": false,
+      "services": ["svc:blackroad-gateway", "svc:roadie", "svc:integrations", "svc:models", "svc:receipts"]
+    },
+    "ollama": {
+      "role": "private-model-worker",
+      "binding": "road://service/models",
+      "tailscaleService": "svc:models",
+      "listenerCandidate": "http://127.0.0.1:11434",
+      "state": "BLOCKED_OFFLINE",
+      "fallback": "NONE",
+      "requiredEvidence": ["tailnet-node-identity", "service-ownership", "private-listener", "model-inventory", "bounded-inference"]
+    },
+    "roadie": {
+      "role": "orchestrator",
+      "binding": "road://service/roadie",
+      "state": "POLICY_ROUTE_DEFINED"
+    },
+    "forge": {
+      "role": "canonical-source-target",
+      "binding": "road://service/forge",
+      "canonicalOrigin": "git.blackroad.systems",
+      "githubIsTransport": true
+    },
+    "onepassword": {
+      "role": "secret-reference-only",
+      "valuesPermittedInFabric": false
+    }
+  },
+  "workflow": [
+    "INGEST",
+    "CLASSIFY",
+    "RESOLVE",
+    "AUTHORIZE",
+    "CLAIM",
+    "EXECUTE_PROVIDER_NATIVE",
+    "VERIFY_READ_BACK",
+    "RECEIPT",
+    "HANDOFF"
+  ],
+  "states": [
+    "PLANNED",
+    "QUEUED",
+    "LEASED",
+    "EXECUTING",
+    "WAITING_VERIFICATION",
+    "COMPLETED",
+    "BLOCKED",
+    "BLOCKED_OFFLINE",
+    "FAILED",
+    "TIMEOUT_UNKNOWN",
+    "DEAD_LETTER"
+  ],
+  "invariants": [
+    "unknown-input-fails-restrictive",
+    "provider-authentication-does-not-imply-authority",
+    "external-writes-require-exact-target",
+    "high-risk-actions-require-strong-explicit-approval",
+    "provider-success-requires-read-after-write-verification",
+    "timeouts-reconcile-before-retry",
+    "secret-values-never-enter-fabric",
+    "tailscale-remains-private-by-default",
+    "ollama-has-no-silent-public-or-paid-fallback",
+    "slack-and-github-are-not-canonical-memory"
+  ]
+}
