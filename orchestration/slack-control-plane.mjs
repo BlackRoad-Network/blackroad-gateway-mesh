@@ -386,7 +386,7 @@ export function planOllamaDispatch(evidence = {}) {
   const required = {
     tailnetNodeIdentity: Boolean(evidence.tailnetNodeIdentity),
     serviceOwnership: evidence.serviceOwnership === COCKPIT.modelService,
-    privateListener: Boolean(evidence.privateListener),
+    privateListener: evidence.privateListener === true,
     modelInventory: Array.isArray(evidence.modelInventory) && evidence.modelInventory.length > 0,
     boundedInference: evidence.boundedInference === true
   };
@@ -423,8 +423,8 @@ export function buildReceipt(operation) {
     throw new TypeError("operation is required");
   }
 
-  const providerAcknowledged = Boolean(operation.providerAcknowledged);
-  const readBackVerified = Boolean(operation.readBackVerified);
+  const providerAcknowledged = operation.providerAcknowledged === true;
+  const readBackVerified = operation.readBackVerified === true;
   const timeoutUnknown = operation.timeoutUnknown === true;
 
   const state = timeoutUnknown

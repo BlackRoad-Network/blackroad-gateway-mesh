@@ -12,6 +12,27 @@ import {
   planOllamaDispatch
 } from "./slack-control-plane.mjs";
 
+test("non-boolean evidence cannot complete an operation receipt", () => {
+  for (const value of ["false", "true", 1, [], {}]) {
+    assert.equal(buildReceipt({ providerAcknowledged: value, readBackVerified: true }).state, "FAILED");
+    assert.equal(buildReceipt({ providerAcknowledged: true, readBackVerified: value }).state, "WAITING_VERIFICATION");
+  }
+});
+
+test("private listener evidence must be explicitly true", () => {
+  for (const privateListener of ["false", "true", 1, [], {}]) {
+    const result = planOllamaDispatch({
+      tailnetNodeIdentity: "olympia",
+      serviceOwnership: "svc:models",
+      privateListener,
+      modelInventory: ["model-a"],
+      boundedInference: true
+    });
+    assert.equal(result.state, "BLOCKED_OFFLINE");
+    assert.deepEqual(result.missing, ["privateListener"]);
+  }
+});
+
 test("rejects non-Road input", () => {
   assert.equal(parseRoadCommand("hello").state, "BLOCKED_UNKNOWN_COMMAND");
 });
