@@ -52,7 +52,8 @@ function signedEvidence(requirements, { id, operation = 'write', input = {}, ses
 test('configured runtime persists intent before dispatch and reconciles unknown writes after restart', async (t) => {
   const directory = await mkdtemp(join(tmpdir(), 'road-runtime-'));
   t.after(() => rm(directory, { recursive: true, force: true }));
-  const queue = new DurableReconciliationQueue({ directory });
+  let now = 1_000;
+  const queue = new DurableReconciliationQueue({ directory, clock: () => now, graceMs: 10 });
   const input = { target: 'private-target', idempotencyKey: randomUUID() };
   const contextKey = randomUUID();
   let writes = 0;
@@ -69,7 +70,8 @@ test('configured runtime persists intent before dispatch and reconciles unknown 
   const outcome = await runtime.execute({ ...request, evidence: signedEvidence(denied.requirements, request) });
   assert.equal(outcome.receipt.status, 'unknown');
   assert.equal(outcome.receipt.reconciliation.jobId, contextKey);
-  const restored = new DurableReconciliationQueue({ directory });
+  now = 1_010;
+  const restored = new DurableReconciliationQueue({ directory, clock: () => now, graceMs: 10 });
   const [reconciled] = await restored.runDue({ adapters, resolveContext: async () => ({ id: 'slack', input }) });
   assert.equal(reconciled.status, 'succeeded');
   // Even fresh approval and a new in-memory verifier cannot replay the same durable context.
