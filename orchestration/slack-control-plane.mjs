@@ -57,7 +57,7 @@ const SECRET_MATERIAL = Object.freeze([
   /\bxox[baprs]-[A-Za-z0-9-]{20,}\b/,
   /\btskey-[A-Za-z0-9-]{20,}\b/,
   /\bsk-[A-Za-z0-9_-]{20,}\b/,
-  /\b(?:authorization|password|passwd|secret|token|api[_-]?key|access[_-]?key|client[_-]?secret|signing[_-]?secret|webhook[_-]?secret|private[_-]?key)\s*[:=]\s*\S{8,}/i,
+  /(?:^|[\s,;])(?:[a-z0-9]+[_ -]+)*(?:authorization|password|passwd|secret|token|api[_ -]?key|access[_ -]?key|client[_ -]?secret|signing[_ -]?secret|webhook[_ -]?secret|private[_ -]?key)\s*[:=]\s*\S{8,}/i,
   /\bAKIA[A-Z0-9]{16}\b/,
   /\bBearer\s+[A-Za-z0-9._~+/=-]{16,}\b/i
 ]);
@@ -510,8 +510,16 @@ export function buildReceipt(operation) {
   if (!ACTION_CLASSES.has(operation.actionClass)) throw new TypeError("invalid receipt action class");
   if (!/^(?:connector-orchestrator|agent-instance-[1-6])$/.test(operation.agentId)) throw new TypeError("invalid receipt agent id");
   if (!/^[a-z0-9][a-z0-9-]*$/.test(operation.connectorId)) throw new TypeError("invalid receipt connector id");
-  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(operation.recordedAt) || Number.isNaN(Date.parse(operation.recordedAt))) {
+  if (!isRfc3339UtcInstant(operation.recordedAt)) {
     throw new TypeError("invalid receipt timestamp");
+  }
+  for (const key of [
+    "claimId", "invocationId", "workflowId", "sessionRef",
+    "providerRequestRef", "decisionReceiptRef", "errorClass"
+  ]) {
+    if (operation[key] !== undefined && operation[key] !== null && typeof operation[key] !== "string") {
+      throw new TypeError(`${key} must be a string or null`);
+    }
   }
   for (const key of ["evidenceRefs", "validationRefs"]) {
     if (operation[key] !== undefined && (!Array.isArray(operation[key]) || operation[key].some((value) => typeof value !== "string"))) {
@@ -535,10 +543,27 @@ export function buildReceipt(operation) {
     decisionReceiptRef: operation.decisionReceiptRef ?? null,
     evidenceRefs: Object.freeze(Array.isArray(operation.evidenceRefs) ? [...operation.evidenceRefs] : []),
     validationRefs: Object.freeze(Array.isArray(operation.validationRefs) ? [...operation.validationRefs] : []),
-    errorClass: typeof operation.errorClass === "string" ? operation.errorClass : null,
+    errorClass: operation.errorClass ?? null,
     summary: outcome === "PARTIAL" ? "provider-acknowledged-awaiting-verification" : null,
     recordedAt: operation.recordedAt
   });
+}
+
+function isRfc3339UtcInstant(value) {
+  if (typeof value !== "string") return false;
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?Z$/.exec(value);
+  if (!match) return false;
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText);
+  if (month < 1 || month > 12 || hour > 23 || minute > 59 || second > 59) return false;
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return day >= 1 && day <= days[month - 1];
 }
 
 function normalizeResolvedPlan(id, plan) {

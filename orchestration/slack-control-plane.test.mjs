@@ -79,7 +79,9 @@ test("rejects secret-like material without returning the target", () => {
 test("rejects generic API keys and raw AWS access-key identifiers", () => {
   for (const text of [
     "road run api_key=private-value-1729",
+    "road run api key=private-value-1729",
     "road run access-key=private-value-1729",
+    "road run AWS_SECRET_ACCESS_KEY=private-value-1729",
     "road run AKIA1234567890ABCDEF"
   ]) {
     const result = parseRoadCommand(text);
@@ -564,4 +566,28 @@ test("operation receipts contain only collaboration receipt contract fields", ()
   assert.equal(result.outcome, "SUCCEEDED");
   assert.equal("state" in result, false);
   assert.equal("retryAllowed" in result, false);
+});
+
+test("operation receipts reject non-string nullable reference fields", () => {
+  for (const key of [
+    "claimId", "invocationId", "workflowId", "sessionRef",
+    "providerRequestRef", "decisionReceiptRef", "errorClass"
+  ]) {
+    assert.throws(() => receipt({ [key]: 1729 }), new RegExp(`${key} must be a string or null`));
+    assert.equal(receipt({ [key]: null })[key], null);
+  }
+});
+
+test("operation receipt timestamps require real RFC3339 UTC calendar instants", () => {
+  for (const recordedAt of [
+    "2026-02-29T00:00:00Z",
+    "2026-02-31T00:00:00Z",
+    "2026-04-31T00:00:00Z",
+    "2026-09-11T24:00:00Z",
+    "2026-09-11T23:60:00Z",
+    "2026-09-11T23:59:60Z"
+  ]) {
+    assert.throws(() => receipt({ recordedAt }), /invalid receipt timestamp/);
+  }
+  assert.equal(receipt({ recordedAt: "2024-02-29T23:59:59.123Z" }).recordedAt, "2024-02-29T23:59:59.123Z");
 });
