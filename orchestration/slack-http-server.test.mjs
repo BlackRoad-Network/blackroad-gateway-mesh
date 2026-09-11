@@ -71,7 +71,18 @@ test("real HTTP intake persists a private reference before acknowledging, then r
   assert.doesNotMatch(raw, /private-plan|local-http-test-signing|road run/);
   assert.equal(records[0].threadTs, payload().event.thread_ts);
   const restored = restoreSlackInboxEvent(records[0], { workspaceId: COCKPIT.workspaceId, channelId: COCKPIT.channelId, message: payload().event });
-  assert.equal(planSlackCommandIntake(restored, { inboundSubscriptionVerified: true }).state, "AWAITING_AUTHORIZATION");
+  assert.equal(planSlackCommandIntake(restored, {
+    inboundSubscriptionVerified: true,
+    resolvedPlansById: {
+      "private-plan-1729": {
+        id: "private-plan-1729",
+        actionClass: "WRITE",
+        resourceKey: "road:plan:private-plan-1729",
+        planHash: `sha256:${"a".repeat(64)}`,
+        risk: []
+      }
+    }
+  }).state, "AWAITING_AUTHORIZATION");
   assert.deepEqual(await inbox.list(), await restarted.list());
 });
 
