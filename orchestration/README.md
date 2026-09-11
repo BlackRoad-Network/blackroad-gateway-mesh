@@ -185,6 +185,59 @@ The delivery planner emits exactly one of:
 
 Keys are recorded only after the provider write is read back and verified.
 
+### Inbox worker and RoadOS broker handoff
+
+`createSlackInboxWorker` implements the explicit inbox scan and broker handoff.
+It is disabled by default; construction and `runOnce()` without `enabled: true`
+perform no provider reads or broker calls. Supply an existing private `0700`
+ledger directory on owned local Linux storage, separate from the reference inbox:
+
+```js
+import { SlackHandoffLedger, createSlackInboxWorker } from './slack-inbox-worker.mjs';
+
+const worker = createSlackInboxWorker({
+  inbox,
+  ledger: new SlackHandoffLedger({ directory: ledgerDirectory }),
+  readMessage, // Authenticated provider read-back, returning workspaceId/channelId/message.
+  getState,    // Current trusted RoadOS policy, resolved plans, and bound approval.
+  broker: { handoff, lookup }
+});
+const batch = await worker.runOnce({ enabled: true, limit: 20, after: cursor });
+```
+
+Each pending record is restored against provider read-back and evaluated through
+the current command planner, including resolved-plan hashes and strong-approval
+rules. Blocked plans do not consume a ledger claim, so a later approved scan can
+continue. The worker freezes its plan snapshot and syncs a permanent claim before
+calling the broker. Concurrent workers and restarted processes cannot submit that
+event again. The ledger stores only a hashed event key and an opaque work-item
+UUID; command targets, source bodies, approval records, and provider errors stay
+out of it.
+
+Broker adapter contract:
+
+- `handoff({ event, plan, idempotencyKey })` must atomically recheck current
+  session/policy/approval, acquire the exact resource claim, and durably create or
+  find one work item for that key. It returns `{ accepted: true, workItemId }`
+  only after durable acceptance; `workItemId` must be a lowercase UUID.
+- `lookup({ idempotencyKey })` is read-only. It returns the same accepted item
+  when acceptance can be proved, or an unconfirmed result otherwise.
+
+`HANDED_OFF` means broker acceptance, not provider execution or completion.
+Thrown, timed-out, invalid, rejected, or unpersisted responses leave
+`HANDOFF_UNKNOWN`. Future scans use lookup only. A crash between claim creation
+and submission also stays unknown and needs operator/broker reconciliation;
+claims never expire and must not be deleted to retry a write. Late callbacks
+cannot trigger a new submission. Read-back, state retrieval, and broker calls
+each have a configurable deadline (two seconds by default); timed-out provider
+requests are not cancelled. Disk operations require functioning local storage.
+
+`runOnce` returns reference-only outcomes and the inbox pagination cursor. Re-scan
+from the beginning on later passes so blocked and newly arrived items are seen.
+No timer, broker backend, provider reader, or execution adapter is installed by
+this module. The injected broker remains responsible for authoritative approval,
+resource exclusion, provider execution, verification, and canonical receipts.
+
 ## Provider roles
 
 | Provider | Role | Current state |

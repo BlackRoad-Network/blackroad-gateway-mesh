@@ -1,6 +1,14 @@
 {
   "schema": "road-slack-orchestration-control-plane-v1",
-  "version": "1.4.0",
+  "version": "1.5.0",
+  "inboxWorker": {
+    "state": "BROKER_HANDOFF_IMPLEMENTED_NOT_ACTIVATED",
+    "default": "DISABLED",
+    "claim": "DURABLE_EVENT_KEY_BEFORE_HANDOFF",
+    "ambiguousOutcome": "LOOKUP_ONLY_NO_RESUBMIT",
+    "completionMeaning": "BROKER_ACCEPTANCE_NOT_PROVIDER_COMPLETION",
+    "broker": "HOST_INJECTED_ROADOS_AUTHORITY"
+  },
   "authority": {
     "system": "RoadOS",
     "operator": "Alexa",
