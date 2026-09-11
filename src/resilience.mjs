@@ -55,6 +55,7 @@ export class CircuitBreaker {
 export async function invokeWithResilience({ key, operation, invoke, attempts = 3, timeoutMs = 5_000, breaker = new CircuitBreaker(), delay = async () => {} }) {
   if (!['read', 'write'].includes(operation)) throw new TypeError('operation must be read or write');
   if (typeof invoke !== 'function') throw new TypeError('invoke must be a function');
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) throw new RangeError('timeoutMs must be positive');
   const maximum = operation === 'write' ? 1 : attempts;
   if (!Number.isInteger(maximum) || maximum < 1) throw new RangeError('attempts must be a positive integer');
   if (!breaker.allow(key)) throw new CircuitOpenError(key);

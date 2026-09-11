@@ -9,9 +9,18 @@
     "schema": {"const": "road-connector-receipt-v1"},
     "connector": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
     "operation": {"enum": ["read", "write"]},
-    "status": {"enum": ["blocked", "planned", "failed", "succeeded"]},
+    "status": {"enum": ["blocked", "planned", "failed", "succeeded", "unknown"]},
     "reason": {"type": ["string", "null"]},
     "inputSha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "reconciliation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "automaticRetry"],
+      "properties": {
+        "required": {"const": true},
+        "automaticRetry": {"const": false}
+      }
+    },
     "verification": {
       "oneOf": [
         {"type": "null"},
@@ -26,5 +35,9 @@
       ]
     },
     "timestamp": {"type": "string", "format": "date-time"}
-  }
+  },
+  "allOf": [{
+    "if": {"properties": {"status": {"const": "unknown"}}, "required": ["status"]},
+    "then": {"required": ["reconciliation"], "properties": {"operation": {"const": "write"}}}
+  }]
 }

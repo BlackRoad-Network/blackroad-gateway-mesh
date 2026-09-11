@@ -63,11 +63,25 @@ Write evidence is never accepted as caller-supplied booleans. Every evidence rec
 
 Receipts contain an SHA-256 digest of the input instead of the input itself, so tokens, message bodies, and account data are not copied into logs.
 
+Write exceptions, including timeouts and exceptions during read-back, produce
+`status: "unknown"` with `reconciliation: { required: true, automaticRetry: false }`.
+Any successful invocation result remains on the returned outcome for subsequent
+provider read-back; it is not copied into the receipt. Approval nonces remain
+consumed. A timeout does not cancel or roll back a provider request.
+
+The calling orchestrator must retain the unknown receipt and arrange a separate
+provider read-back using the original target/idempotency context and any returned
+provider object reference. It must append the reconciliation evidence before
+deciding whether any new write is appropriate. This runtime does not implement a
+durable reconciliation queue or schedule background provider calls. A completed
+read-back returning `ok: false` retains the existing failed-verification status;
+read execution errors remain failed reads.
+
 ## Adapter SDK and fleet audit
 
-`defineAdapter` rejects malformed adapters and requires every write-capable adapter to provide a verification function. `AdapterRegistry` rejects duplicate registrations and can resolve a canonical connector through its shared provider alias.
+`defineAdapter` rejects malformed adapters and requires every write-capable adapter to provide a verification function. `AdapterRegistry` rejects duplicate registrations and declared IDs that differ from their registration keys. Provider aliases can still resolve a canonical connector through its correctly registered shared adapter.
 
-`auditConnectors` probes a selected set or all 62 connectors with bounded concurrency from 1–16, while preserving canonical result order. `diffHealthSnapshots` classifies recovery, degradation, and same-health state changes. With no live adapters registered, the CLI audit reads the verified catalog overlay and performs no network calls.
+`auditConnectors` probes a selected set or all 65 connectors with bounded concurrency from 1–16, while preserving canonical result order. `diffHealthSnapshots` classifies recovery, degradation, and same-health state changes. With no live adapters registered, the CLI audit reads the verified catalog overlay and performs no network calls.
 
 `ReceiptChain` creates a SHA-256-linked sequence of execution receipts. Its verifier detects modification, insertion, or reordering; checking against an externally retained `checkpoint()` also detects tail deletion. Raw request inputs are never stored in the chain.
 

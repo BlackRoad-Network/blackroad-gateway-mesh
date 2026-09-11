@@ -32,6 +32,7 @@ export class AdapterRegistry {
   register(id, adapter) {
     if (!CONNECTOR_ID.test(id ?? '')) throw new TypeError('registry key must be a canonical connector id');
     if (!adapter || typeof adapter !== 'object') throw new TypeError(`${id}: adapter must be an object`);
+    if (adapter.id !== undefined && adapter.id !== id) throw new TypeError(`${id}: adapter id must match registry key`);
     if (this.#adapters.has(id)) throw new Error(`adapter already registered: ${id}`);
     const validated = defineAdapter({
       id,

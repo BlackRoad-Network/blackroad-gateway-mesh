@@ -4,7 +4,7 @@ export function digestInput(input) {
   return createHash('sha256').update(canonicalJson(input)).digest('hex');
 }
 
-export function createReceipt({ id, operation, status, reason = null, input = {}, verification = null, timestamp }) {
+export function createReceipt({ id, operation, status, reason = null, input = {}, verification = null, reconciliation = null, timestamp }) {
   return Object.freeze({
     schema: 'road-connector-receipt-v1',
     connector: id,
@@ -13,6 +13,7 @@ export function createReceipt({ id, operation, status, reason = null, input = {}
     reason,
     inputSha256: digestInput(input),
     verification,
+    ...(reconciliation === null ? {} : { reconciliation }),
     timestamp
   });
 }

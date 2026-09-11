@@ -262,6 +262,104 @@ test('adapter SDK enforces write verification and duplicate ownership', () => {
   assert.deepEqual(registry.list(), ['slack']);
 });
 
+test('adapter identity cannot be rebound through object, map, or direct registration', () => {
+  const adapter = defineAdapter({ id: 'github', execute: async () => ({}) });
+  assert.throws(() => new AdapterRegistry({ slack: adapter }), /adapter id must match registry key/);
+  assert.throws(() => new AdapterRegistry(new Map([['slack', adapter]])), /adapter id must match registry key/);
+  assert.throws(() => new AdapterRegistry().register('slack', adapter), /adapter id must match registry key/);
+  assert.deepEqual(new AdapterRegistry({ github: adapter }).list(), ['github']);
+  assert.deepEqual(new AdapterRegistry({ github: { execute: async () => ({}) } }).list(), ['github']);
+});
+
+test('invalid timeout values cannot start provider calls or change the circuit', async () => {
+  for (const operation of ['read', 'write']) {
+    for (const timeoutMs of [0, -1, NaN, Infinity, -Infinity, '100', null]) {
+      let calls = 0;
+      const breaker = new CircuitBreaker({ failureThreshold: 1 });
+      await assert.rejects(invokeWithResilience({
+        key: 'invalid-timeout', operation, timeoutMs, breaker,
+        invoke: async () => { calls += 1; return {}; }
+      }), RangeError);
+      assert.equal(calls, 0, `${operation}: timeout ${timeoutMs} started a provider call`);
+      assert.equal(breaker.state('invalid-timeout'), 'closed');
+    }
+  }
+});
+
+test('ambiguous writes require reconciliation and keep approval consumed', async () => {
+  for (const phase of ['execute', 'verify']) {
+    let writes = 0;
+    const result = { providerId: 'message-ambiguous' };
+    const runtime = new ConnectorRuntime({
+      evidenceVerifier: trustedVerifier(), clock: () => AUTH_NOW,
+      adapters: { slack: {
+        operations: ['write'],
+        execute: async () => {
+          writes += 1;
+          if (phase === 'execute') throw new TimeoutError('token=must-not-leak');
+          return result;
+        },
+        verify: async () => { throw new Error('token=must-not-leak'); }
+      } }
+    });
+    const denied = await planConnectorAction('slack', 'write');
+    const evidence = signedEvidence(denied.requirements, { id: 'slack' });
+    const request = { id: 'slack', operation: 'write', evidence, principal: 'user:alexa', sessionId: 'session-1', dryRun: false };
+    const outcome = await runtime.execute(request);
+    assert.equal(outcome.receipt.status, 'unknown');
+    assert.equal(outcome.receipt.reason, phase === 'execute' ? 'write-outcome-unknown' : 'read-after-write-verification-error');
+    assert.deepEqual(outcome.receipt.reconciliation, { required: true, automaticRetry: false });
+    assert.equal(outcome.result, phase === 'verify' ? result : undefined);
+    assert.ok(!JSON.stringify(outcome.receipt).includes('must-not-leak'));
+    assert.equal((await runtime.execute(request)).receipt.status, 'blocked');
+    assert.equal(writes, 1);
+  }
+});
+
+test('read execution errors remain failed without write reconciliation', async () => {
+  const runtime = new ConnectorRuntime({ adapters: { github: {
+    execute: async () => { throw new Error('token=must-not-leak'); }
+  } } });
+  const outcome = await runtime.execute({ id: 'github', operation: 'read', dryRun: false });
+  assert.equal(outcome.receipt.status, 'failed');
+  assert.equal(outcome.receipt.reason, 'adapter-execution-failed');
+  assert.equal(outcome.receipt.reconciliation, undefined);
+  assert.ok(!JSON.stringify(outcome.receipt).includes('must-not-leak'));
+});
+
+test('a provider write can complete after timeout without being invoked again', async () => {
+  let writes = 0;
+  let release;
+  let committed = false;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const adapter = createMcpAdapter({
+    id: 'slack', operations: ['write'], resilience: { timeoutMs: 5, attempts: 3 },
+    actions: { write: { tool: 'slack.write' }, verify: { tool: 'slack.verify' } },
+    invoke: async (tool) => {
+      if (tool === 'slack.verify') return { ok: committed };
+      writes += 1;
+      await gate;
+      committed = true;
+      return { providerId: 'late-message' };
+    }
+  });
+  const runtime = new ConnectorRuntime({ adapters: [adapter], evidenceVerifier: trustedVerifier(), clock: () => AUTH_NOW });
+  const denied = await planConnectorAction('slack', 'write');
+  const evidence = signedEvidence(denied.requirements, { id: 'slack' });
+  const request = { id: 'slack', operation: 'write', evidence, principal: 'user:alexa', sessionId: 'session-1', dryRun: false };
+  const outcome = await runtime.execute(request);
+  assert.equal(outcome.receipt.status, 'unknown');
+  assert.equal(outcome.receipt.verification.detail, 'TimeoutError');
+  release();
+  await gate;
+  assert.equal(committed, true);
+  assert.equal((await runtime.execute(request)).receipt.status, 'blocked');
+  assert.equal(writes, 1);
+  // A separate read-back establishes provider state without repeating the write.
+  assert.equal((await adapter.verify({ input: {} })).ok, true);
+  assert.equal(writes, 1);
+});
+
 test('adapter inspection rejects capabilities beyond the connector role', async () => {
   const zoom = await getConnector('zoom');
   const result = inspectAdapter({ operations: ['write'], execute: async () => {}, verify: async () => ({ ok: true }) }, zoom);

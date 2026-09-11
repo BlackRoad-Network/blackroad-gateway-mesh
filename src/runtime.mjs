@@ -61,9 +61,12 @@ export class ConnectorRuntime {
       if (!plan.allowed) return { plan, receipt: createReceipt({ id, operation, status: 'blocked', reason: plan.reason, input, timestamp }) };
     }
 
+    let result;
+    let phase = 'execute';
     try {
-      const result = await adapter.execute({ connector, operation, input });
+      result = await adapter.execute({ connector, operation, input });
       if (operation === 'write') {
+        phase = 'verify';
         const verification = await adapter.verify({ connector, operation, input, result });
         if (verification?.ok !== true) {
           return { plan, result, receipt: createReceipt({ id, operation, status: 'failed', reason: 'read-after-write-verification-failed', input, verification: publicVerification(verification), timestamp }) };
@@ -72,6 +75,17 @@ export class ConnectorRuntime {
       }
       return { plan, result, receipt: createReceipt({ id, operation, status: 'succeeded', input, timestamp }) };
     } catch (error) {
+      if (operation === 'write') {
+        // A thrown call does not prove that the provider rolled back the write.
+        // Keep any acknowledged result available for a later read-back. Consumed
+        // approval stays consumed; only the orchestrator may reconcile the state.
+        return { plan, result, receipt: createReceipt({
+          id, operation, status: 'unknown',
+          reason: phase === 'verify' ? 'read-after-write-verification-error' : 'write-outcome-unknown',
+          input, verification: { detail: safeError(error) },
+          reconciliation: { required: true, automaticRetry: false }, timestamp
+        }) };
+      }
       return { plan, receipt: createReceipt({ id, operation, status: 'failed', reason: 'adapter-execution-failed', input, verification: { detail: safeError(error) }, timestamp }) };
     }
   }
