@@ -1,6 +1,14 @@
 {
   "schema": "road-slack-orchestration-control-plane-v1",
-  "version": "1.0.0",
+  "version": "1.5.0",
+  "inboxWorker": {
+    "state": "BROKER_HANDOFF_IMPLEMENTED_NOT_ACTIVATED",
+    "default": "DISABLED",
+    "claim": "DURABLE_EVENT_KEY_BEFORE_HANDOFF",
+    "ambiguousOutcome": "LOOKUP_ONLY_NO_RESUBMIT",
+    "completionMeaning": "BROKER_ACCEPTANCE_NOT_PROVIDER_COMPLETION",
+    "broker": "HOST_INJECTED_ROADOS_AUTHORITY"
+  },
   "authority": {
     "system": "RoadOS",
     "operator": "Alexa",
@@ -33,15 +41,34 @@
     "prefix": "road",
     "verbs": {
       "status": "READ",
-      "plan": "PLAN",
-      "run": "EXECUTE",
-      "verify": "VERIFY",
+      "plan": "READ",
+      "run": "WRITE",
+      "verify": "READ",
       "receipt": "READ",
-      "stop": "STOP",
-      "reconcile": "RECONCILE",
-      "handoff": "HANDOFF"
+      "stop": "ADMIN",
+      "reconcile": "ADMIN",
+      "handoff": "COMMUNICATE"
     },
-    "unknownVerb": "BLOCKED_UNKNOWN_COMMAND"
+    "unknownVerb": "BLOCKED_UNKNOWN_COMMAND",
+    "intake": {
+      "state": "HTTP_ENDPOINT_IMPLEMENTED_INBOUND_UNVERIFIED",
+      "requestAuthentication": "SLACK_V0_HMAC_SHA256_RAW_BYTES",
+      "requestFreshnessSeconds": 300,
+      "requestBodyLimitBytes": 65536,
+      "applicationBinding": "HOST_CONFIGURED_APP_ID",
+      "workspaceBinding": "T09BC6BSEDV",
+      "listener": "EXPLICIT_LOOPBACK_LISTEN_REQUIRED_NOT_DEPLOYED",
+      "httpPath": "/slack/events",
+      "handoff": "DURABLE_PROVIDER_REFERENCE_INBOX",
+      "httpAcknowledgement": "AFTER_SYNCED_REFERENCE",
+      "httpRequestDeadlineMs": 2500,
+      "messageTypes": ["message-without-subtype"],
+      "dedupe": "canonical-event-id",
+      "threadBinding": "exact-provider-thread-ts",
+      "approvalBinding": ["canonical-event-id", "content-hash", "thread-ts"],
+      "recording": "after-verified-receipt",
+      "providerMutations": "none-at-intake"
+    }
   },
   "connectors": {
     "slack": {
@@ -56,7 +83,7 @@
       "role": "code-and-event-provider",
       "binding": "road+connector://github/repository/BlackRoad-Network/blackroad-gateway-mesh",
       "state": "PR_EVENT_ROUTE_ENABLED",
-      "events": ["opened", "ready_for_review", "closed", "synchronize", "review_submitted", "comment_created"],
+      "events": ["opened", "ready_for_review", "closed", "synchronize", "reopened", "edited", "converted_to_draft"],
       "slackDestination": "road+connector://slack/channel/C0A2M4K8WLB",
       "automaticMutations": []
     },
