@@ -19,9 +19,13 @@ export function createReceipt({ id, operation, status, reason = null, input = {}
 }
 
 export function canonicalJson(value) {
+  return encodeCanonical(snapshotJson(value));
+}
+
+export function snapshotJson(value) {
   const encoded = JSON.stringify(value);
   if (encoded === undefined) throw new TypeError('receipt values must be JSON-serializable');
-  return encodeCanonical(JSON.parse(encoded));
+  return deepFreeze(JSON.parse(encoded));
 }
 
 function encodeCanonical(value) {
@@ -30,4 +34,10 @@ function encodeCanonical(value) {
     return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${encodeCanonical(value[key])}`).join(',')}}`;
   }
   return JSON.stringify(value);
+}
+
+function deepFreeze(value) {
+  if (!value || typeof value !== 'object') return value;
+  for (const item of Object.values(value)) deepFreeze(item);
+  return Object.freeze(value);
 }

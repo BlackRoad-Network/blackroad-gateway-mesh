@@ -22,10 +22,11 @@ export class EvidenceVerifier {
     const reserved = [];
     const nowMs = Date.parse(this.#clock());
     if (!Number.isFinite(nowMs)) throw new TypeError('evidence clock must return an ISO timestamp');
+    const verifiedContext = Object.freeze({ ...context });
 
     for (const requirement of requirements) {
-      const record = evidence?.[requirement];
-      const error = validateRecord(requirement, record, context, nowMs, this.#maxLifetimeMs, this.#usedNonces, this.#reservedNonces, accepted);
+      const record = snapshotRecord(evidence?.[requirement]);
+      const error = validateRecord(requirement, record, verifiedContext, nowMs, this.#maxLifetimeMs, this.#usedNonces, this.#reservedNonces, accepted);
       if (error) {
         errors.push(`${requirement}:${error}`);
         continue;
@@ -43,7 +44,7 @@ export class EvidenceVerifier {
     if (errors.length === 0) for (const record of accepted) {
       let proofValid = false;
       try {
-        proofValid = await this.#verifyProof(record, { ...context, requirement: record.requirement });
+        proofValid = await this.#verifyProof(record, { ...verifiedContext, requirement: record.requirement });
       } catch {}
       if (proofValid !== true) {
         errors.push(`${record.requirement}:proof-invalid`);
@@ -56,6 +57,11 @@ export class EvidenceVerifier {
     }
     return Object.freeze({ valid: errors.length === 0, errors: Object.freeze(errors), consumed: consume && errors.length === 0 });
   }
+}
+
+function snapshotRecord(record) {
+  if (!record || typeof record !== 'object' || Array.isArray(record)) return record;
+  return Object.freeze({ ...record });
 }
 
 function validateRecord(requirement, record, context, nowMs, maxLifetimeMs, usedNonces, reservedNonces, accepted) {

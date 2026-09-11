@@ -1,6 +1,6 @@
 import { getConnector } from './catalog.mjs';
 import { planConnectorAction } from './planner.mjs';
-import { createReceipt, digestInput } from './receipt.mjs';
+import { createReceipt, digestInput, snapshotJson } from './receipt.mjs';
 import { AdapterRegistry } from './adapter-sdk.mjs';
 import { DurableReconciliationQueue } from './reconciliation.mjs';
 
@@ -41,7 +41,10 @@ export class ConnectorRuntime {
     }
   }
 
-  async execute({ id, operation, input = {}, evidence = {}, principal = null, sessionId = null, dryRun = true, contextKey = null }) {
+  async execute({ id, operation, input: requestedInput = {}, evidence = {}, principal = null, sessionId = null, dryRun = true, contextKey = null }) {
+    // Capture provider input before the first await so caller mutation cannot
+    // change the operation after its digest has been authorized.
+    const input = snapshotJson(requestedInput);
     const timestamp = this.#clock();
     const context = { id, operation, inputSha256: digestInput(input), principal, sessionId };
     let plan = await planConnectorAction(id, operation, evidence, { verifier: this.#evidenceVerifier, context });

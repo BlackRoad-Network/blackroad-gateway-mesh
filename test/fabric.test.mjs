@@ -275,6 +275,29 @@ test('verified writes produce input-safe receipts', async () => {
   assert.ok(!JSON.stringify(outcome.receipt).includes(input.text));
 });
 
+test('runtime snapshots JSON input before asynchronous authorization', async () => {
+  const denied = await planConnectorAction('slack', 'write');
+  const input = { text: 'approved text', when: new Date('2026-09-11T01:02:03.000Z') };
+  const request = { id: 'slack', operation: 'write', input, principal: 'user:alexa', sessionId: 'session-1', dryRun: false };
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const verifier = new EvidenceVerifier({ clock: () => AUTH_NOW, verifyProof: async () => { await gate; return true; } });
+  let executedInput;
+  const runtime = new ConnectorRuntime({
+    adapters: { slack: { operations: ['write'], execute: async ({ input: value }) => { executedInput = value; return {}; }, verify: async () => ({ ok: true }) } },
+    evidenceVerifier: verifier,
+    clock: () => AUTH_NOW
+  });
+  const pending = runtime.execute({ ...request, evidence: signedEvidence(denied.requirements, request) });
+  input.text = 'mutated after authorization started';
+  input.when.setUTCFullYear(2030);
+  release();
+  const outcome = await pending;
+  assert.equal(outcome.receipt.status, 'succeeded');
+  assert.deepEqual(executedInput, { text: 'approved text', when: '2026-09-11T01:02:03.000Z' });
+  assert.equal(outcome.receipt.inputSha256, digestInput(executedInput));
+});
+
 test('write adapters without verification are rejected before execution', () => {
   let calls = 0;
   assert.throws(() => new ConnectorRuntime({
@@ -337,6 +360,33 @@ test('concurrent replay attempts reserve evidence atomically', async () => {
   const rejected = await second;
   assert.equal(rejected.valid, false);
   assert.ok(rejected.errors.every((error) => error.endsWith(':replayed')));
+});
+
+test('nonce consumption uses the validated snapshot when caller evidence mutates', async () => {
+  let release;
+  let started;
+  let calls = 0;
+  const gate = new Promise((resolve) => { release = resolve; });
+  const verifier = new EvidenceVerifier({
+    clock: () => AUTH_NOW,
+    verifyProof: async () => { calls += 1; if (calls === 1) { started(); await gate; } return true; }
+  });
+  const context = { id: 'slack', operation: 'write', inputSha256: digestInput({}), principal: 'user:alexa', sessionId: 'session-1' };
+  const original = {
+    requirement: 'approval', principal: context.principal, sessionId: context.sessionId,
+    targetId: context.id, operation: context.operation, inputSha256: context.inputSha256,
+    issuer: 'road-authority', nonce: 'nonce-original', proof: 'signed',
+    issuedAt: '2026-09-09T06:29:00.000Z', expiresAt: '2026-09-09T06:34:00.000Z'
+  };
+  const ready = new Promise((resolve) => { started = resolve; });
+  const pending = verifier.verify(['approval'], { approval: original }, context, { consume: true });
+  await ready;
+  original.nonce = 'nonce-mutated';
+  release();
+  assert.equal((await pending).consumed, true);
+  const replay = await verifier.verify(['approval'], { approval: { ...original, nonce: 'nonce-original' } }, context, { consume: true });
+  assert.equal(replay.valid, false);
+  assert.match(replay.errors[0], /replayed/);
 });
 
 test('probe failures expose an error class but not provider error contents', async () => {
