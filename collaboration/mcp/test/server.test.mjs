@@ -49,7 +49,7 @@ test("stdio server preserves request order and binds tools to configured actor s
   }));
 
   const child = spawn(process.execPath, [resolve("server.mjs")], {
-    cwd: resolve("collaboration/mcp"),
+    cwd: resolve("."),
     env: {
       ...process.env,
       ROAD_AGENT_ID: "agent-instance-4",
@@ -66,7 +66,7 @@ test("stdio server preserves request order and binds tools to configured actor s
     { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "test-v1" } },
     { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "road_collab_session_heartbeat", arguments: {} } },
     { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "road_collab_workflow_instantiate", arguments: { templateId: "one", workflowId: "wf-server", idempotencyKey: "wf-server-key" } } },
-    { jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "road_collab_queue_list", arguments: {} } },
+    { jsonrpc: "2.0", id: 4, method: "tools/call", params: { name: "road_collab_queue_list", arguments: { agentId: "agent-instance-2", sessionRef: "forged-session" } } },
     { jsonrpc: "2.0", id: 5, method: "tools/list", params: {} }
   ];
 

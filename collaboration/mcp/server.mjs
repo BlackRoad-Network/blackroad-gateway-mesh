@@ -171,21 +171,21 @@ async function callTool(name, args = {}) {
     case "road_collab_workflow_templates":
       return broker.templates();
     case "road_collab_workflow_instantiate":
-      return broker.instantiateWorkflow({ ...bound, ...args });
+      return broker.instantiateWorkflow({ ...args, ...bound });
     case "road_collab_queue_list":
-      return broker.queue({ ...bound, ...args });
+      return broker.queue({ ...args, ...bound });
     case "road_collab_work_item_start":
-      return broker.startWorkItem({ ...bound, ...args });
+      return broker.startWorkItem({ ...args, ...bound });
     case "road_collab_work_item_finish":
-      return broker.finishWorkItem({ ...bound, ...args });
+      return broker.finishWorkItem({ ...args, ...bound });
     case "road_collab_delegation_create":
-      return broker.createDelegation({ ...bound, ...args });
+      return broker.createDelegation({ ...args, ...bound });
     case "road_collab_delegation_resolve":
-      return broker.resolveDelegation({ ...bound, ...args });
+      return broker.resolveDelegation({ ...args, ...bound });
     case "road_collab_notifications_list":
-      return broker.notifications({ ...bound, ...args });
+      return broker.notifications({ ...args, ...bound });
     case "road_collab_notification_ack":
-      return broker.acknowledgeNotification({ ...bound, ...args });
+      return broker.acknowledgeNotification({ ...args, ...bound });
     default:
       throw new Error(`unknown-tool:${name}`);
   }

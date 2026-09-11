@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { JsonStateStore } from "../lib/store.mjs";
 import { CollaborationBroker } from "../lib/broker.mjs";
 
-async function fixture() {
+async function fixture(sourceActionClass = "WRITE") {
   const dir = await mkdtemp(join(tmpdir(), "road-collab-mcp-"));
   const templatesPath = join(dir, "templates.json");
   await writeFile(templatesPath, JSON.stringify({
@@ -18,7 +18,7 @@ async function fixture() {
         {
           id: "source",
           connectorProfile: "source-control",
-          actionClass: "WRITE",
+          actionClass: sourceActionClass,
           owner: "agent-instance-2",
           dependsOn: [],
           resourceKey: "git://repo/config"
@@ -231,3 +231,31 @@ test("concurrent starts serialize and permit only one exclusive mutation per age
   assert.equal(results.filter((entry) => entry.status === "rejected").length, 1);
   assert.match(String(results.find((entry) => entry.status === "rejected").reason), /agent-exclusive-mutation-limit/);
 });
+
+for (const finish of [false, true]) {
+  test(`delegation cannot steal ${finish ? "finished" : "running"} work`, async () => {
+    const { broker } = await fixture();
+    await instantiated(broker);
+    const owner = { agentId: "agent-instance-2", sessionRef: "a2-one", workItemId: "wf-test:source" };
+    const delegation = await broker.createDelegation({ ...owner, toAgentId: "agent-instance-4", contractRef: "road://contract/test", idempotencyKey: "offer" });
+    await broker.startWorkItem(owner);
+    if (finish) await broker.finishWorkItem({ ...owner, outcome: "SUCCEEDED", verificationRef: "proof://source" });
+    await assert.rejects(broker.resolveDelegation({ agentId: "agent-instance-4", sessionRef: "a4-one", delegationId: delegation.id, decision: "ACCEPTED" }), /cannot-delegate-started-work/);
+    const source = (await broker.queue({ ...owner, includeTerminal: true }))[0];
+    assert.equal(source.ownerAgentId, owner.agentId);
+    assert.equal(source.sessionRef, owner.sessionRef);
+    if (!finish) await broker.finishWorkItem({ ...owner, outcome: "FAILED" });
+  });
+}
+
+for (const verificationRef of [null, "proof://observation"]) {
+  test(`READ dependency requires verification: ${Boolean(verificationRef)}`, async () => {
+    const { broker } = await fixture("READ");
+    await instantiated(broker);
+    const owner = { agentId: "agent-instance-2", sessionRef: "a2-one", workItemId: "wf-test:source" };
+    await broker.startWorkItem(owner);
+    await broker.finishWorkItem({ ...owner, outcome: "SUCCEEDED", verificationRef });
+    const successor = (await broker.queue({ agentId: "agent-instance-4", sessionRef: "a4-one" }))[0];
+    assert.equal(successor.state, verificationRef ? "READY" : "BLOCKED");
+  });
+}

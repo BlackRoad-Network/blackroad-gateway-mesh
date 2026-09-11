@@ -1,0 +1,20 @@
+name: Collaboration MCP
+on:
+  pull_request:
+    paths:
+      - 'collaboration/mcp/**'
+      - '.github/workflows/collaboration-mcp.yml'
+  push:
+    branches: ['connector-collaboration-mcp-v0.10.0']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm run verify
+        working-directory: collaboration/mcp

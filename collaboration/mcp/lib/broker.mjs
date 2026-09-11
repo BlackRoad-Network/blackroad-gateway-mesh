@@ -388,6 +388,7 @@ export class CollaborationBroker {
         const item = state.workItems[delegation.workItemId];
         if (decision === "ACCEPTED") {
           if (!item || item.ownerAgentId !== delegation.fromAgentId) throw new Error("delegation-work-owner-drift");
+          if (!["READY", "BLOCKED"].includes(item.state)) throw new Error("cannot-delegate-started-work");
           item.previousOwnerAgentId = item.ownerAgentId;
           item.ownerAgentId = agentId;
           item.updatedAt = now();
@@ -504,7 +505,7 @@ export class CollaborationBroker {
         if (!dependencies.every(Boolean)) continue;
         const ready = dependencies.every(
           (dependency) => dependency.state === "SUCCEEDED" &&
-            (!item.requiresVerifiedDependencies || Boolean(dependency.verificationRef) || !MUTATING.has(dependency.actionClass))
+            (!item.requiresVerifiedDependencies || Boolean(dependency.verificationRef))
         );
         if (ready) {
           item.state = "READY";

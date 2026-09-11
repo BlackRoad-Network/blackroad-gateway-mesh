@@ -32,3 +32,14 @@ Provider success does not complete a mutating work item. A successful mutation r
 cd collaboration/mcp
 npm run verify
 ```
+
+## Review corrections and remaining gaps
+
+Tool calls reapply the process-bound agent and session after caller arguments.
+Delegation acceptance rechecks that work is READY or BLOCKED; running and terminal
+work retain their owner. Verified prerequisites require a verification reference
+for READ and OBSERVE steps as well as mutations.
+
+The executable broker is not ready for sensitive provider execution: authoritative
+governance/approval checks at work start and recovery across state/event-log writes
+remain unresolved review findings. The checks above do not implement those gates.
