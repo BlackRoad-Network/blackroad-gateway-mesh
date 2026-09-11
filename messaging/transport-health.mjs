@@ -25,33 +25,61 @@ async function commandExists(command) {
   return null;
 }
 
-async function runCommand(command, args = [], options = {}) {
+export async function runCommand(command, args = [], options = {}) {
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const killGraceMs = options.killGraceMs ?? 250;
   const startedAt = Date.now();
   return new Promise((resolve) => {
     let stdout = '';
     let stderr = '';
     let timedOut = false;
-    const child = spawn(command, args, {
-      shell: false,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: options.env ?? process.env,
-      cwd: options.cwd ?? process.cwd(),
-    });
-    const timer = setTimeout(() => {
+    let settled = false;
+    let timer;
+    let forceTimer;
+    let settleTimer;
+    const finish = ({ code = null, signal = null, error = null } = {}) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      clearTimeout(forceTimer);
+      clearTimeout(settleTimer);
+      let json = null;
+      let jsonError = false;
+      if (options.parseJson && !error) {
+        try { json = JSON.parse(stdout); } catch { jsonError = true; }
+      }
+      resolve({
+        ok: code === 0 && !timedOut && !error,
+        code, signal, timedOut,
+        stdout: safeTail(stdout), stderr: safeTail(error?.message ?? stderr),
+        ...(options.parseJson ? { json, jsonError } : {}),
+        durationMs: Date.now() - startedAt,
+      });
+    };
+    let child;
+    try {
+      child = spawn(command, args, {
+        shell: false,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: options.env ?? process.env,
+        cwd: options.cwd ?? process.cwd(),
+      });
+    } catch (error) {
+      finish({ error });
+      return;
+    }
+    timer = setTimeout(() => {
       timedOut = true;
-      child.kill('SIGTERM');
+      try { child.kill('SIGTERM'); } catch {}
+      forceTimer = setTimeout(() => {
+        try { child.kill('SIGKILL'); } catch {}
+        settleTimer = setTimeout(() => finish({ signal: 'SIGKILL' }), killGraceMs);
+      }, killGraceMs);
     }, timeoutMs);
     child.stdout.on('data', (chunk) => { stdout += chunk.toString(); });
     child.stderr.on('data', (chunk) => { stderr += chunk.toString(); });
-    child.on('error', (error) => {
-      clearTimeout(timer);
-      resolve({ ok: false, code: null, signal: null, timedOut: false, stdout: '', stderr: safeTail(error.message), durationMs: Date.now() - startedAt });
-    });
-    child.on('close', (code, signal) => {
-      clearTimeout(timer);
-      resolve({ ok: code === 0 && !timedOut, code, signal, timedOut, stdout: safeTail(stdout), stderr: safeTail(stderr), durationMs: Date.now() - startedAt });
-    });
+    child.on('error', (error) => finish({ error }));
+    child.on('close', (code, signal) => finish({ code, signal }));
   });
 }
 
@@ -74,7 +102,7 @@ async function listSerialCandidates() {
 
 export async function probeRNode(input = {}) {
   const checkedAt = now();
-  const ports = input.port ? [input.port] : await listSerialCandidates();
+  const ports = input.serialDevice ? [String(input.serialDevice)] : await listSerialCandidates();
   const rnodeconf = await commandExists('rnodeconf');
   const rnstatus = await commandExists('rnstatus');
   const ret = {
@@ -90,10 +118,11 @@ export async function probeRNode(input = {}) {
       ret.reticulumInterfaceUp = true;
       return ret;
     }
+    if (result.timedOut) ret.state = 'TIMEOUT_UNKNOWN';
   }
 
   if (!ports.length) {
-    ret.state = rnodeconf || rnstatus ? 'NO_SERIAL_CANDIDATE' : 'TOOLS_AND_SERIAL_NOT_OBSERVED';
+    if (ret.state !== 'TIMEOUT_UNKNOWN') ret.state = rnodeconf || rnstatus ? 'NO_SERIAL_CANDIDATE' : 'TOOLS_AND_SERIAL_NOT_OBSERVED';
     return ret;
   }
 
@@ -121,11 +150,12 @@ export async function probeTailscale(input = {}) {
   const tailscale = await commandExists('tailscale');
   if (!tailscale) return { probe: 'tailscale', checkedAt, state: 'NOT_INSTALLED', evidence: [] };
 
-  const status = await runCommand(tailscale, ['status', '--json'], { timeoutMs: input.timeoutMs ?? 5000 });
+  const status = await runCommand(tailscale, ['status', '--json'], { timeoutMs: input.timeoutMs ?? 5000, parseJson: true });
   const result = { probe: 'tailscale', checkedAt, state: status.timedOut ? 'TIMEOUT_UNKNOWN' : 'CLIENT_ERROR', evidence: [{ source: 'tailscale-status-json', ok: status.ok, timedOut: status.timedOut, exitCode: status.code }] };
   if (status.ok) {
     try {
-      const data = JSON.parse(status.stdout);
+      if (status.jsonError) throw new Error('invalid status JSON');
+      const data = status.json;
       result.backendState = data.BackendState ?? null;
       result.self = data.Self ? { online: data.Self.Online ?? null, dnsName: data.Self.DNSName ?? null, tailscaleIPs: data.Self.TailscaleIPs ?? [] } : null;
       result.peerCount = data.Peer ? Object.keys(data.Peer).length : 0;
