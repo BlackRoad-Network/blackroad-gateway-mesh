@@ -82,12 +82,22 @@ test("rejects generic API keys and raw AWS access-key identifiers", () => {
     "road run api key=private-value-1729",
     "road run access-key=private-value-1729",
     "road run AWS_SECRET_ACCESS_KEY=private-value-1729",
+    "road status https://host/path?foo=1&api_key=abcdefghijk",
+    "road run --api-key=private-value-1729",
     "road run AKIA1234567890ABCDEF"
   ]) {
     const result = parseRoadCommand(text);
     assert.equal(result.state, "BLOCKED_SECRET_MATERIAL");
     assert.equal("target" in result, false);
   }
+});
+
+test("secret-label scanning remains bounded for maximum-size ordinary targets", () => {
+  const target = `${"ordinary ".repeat(7000)}destination`;
+  const started = performance.now();
+  const result = parseRoadCommand(`road status ${target}`);
+  assert.equal(result.accepted, true);
+  assert.ok(performance.now() - started < 500);
 });
 
 test("handoff requires and preserves both owner and operation", () => {

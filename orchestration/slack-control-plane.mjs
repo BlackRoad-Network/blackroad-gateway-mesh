@@ -57,10 +57,52 @@ const SECRET_MATERIAL = Object.freeze([
   /\bxox[baprs]-[A-Za-z0-9-]{20,}\b/,
   /\btskey-[A-Za-z0-9-]{20,}\b/,
   /\bsk-[A-Za-z0-9_-]{20,}\b/,
-  /(?:^|[\s,;])(?:[a-z0-9]+[_ -]+)*(?:authorization|password|passwd|secret|token|api[_ -]?key|access[_ -]?key|client[_ -]?secret|signing[_ -]?secret|webhook[_ -]?secret|private[_ -]?key)\s*[:=]\s*\S{8,}/i,
   /\bAKIA[A-Z0-9]{16}\b/,
   /\bBearer\s+[A-Za-z0-9._~+/=-]{16,}\b/i
 ]);
+
+const SECRET_LABEL_COMPONENTS = new Set(["authorization", "password", "passwd", "secret", "token"]);
+
+function containsSecretAssignment(value) {
+  // Query/CLI delimiters define independent linear segments. Within each one,
+  // tokenize assignment operators explicitly and inspect at most a two-word
+  // label (for forms such as "api key = ...").
+  for (const segment of value.split(/[,;&?]/)) {
+    const tokens = [];
+    let token = "";
+    const flush = () => { if (token) { tokens.push(token); token = ""; } };
+    for (const character of segment) {
+      if (/\s/.test(character)) {
+        flush();
+      } else if (character === "=" || character === ":") {
+        flush();
+        tokens.push(character);
+      } else {
+        token += character;
+      }
+    }
+    flush();
+    for (let index = 1; index < tokens.length - 1; index += 1) {
+      if (tokens[index] !== "=" && tokens[index] !== ":") continue;
+      const secretValue = tokens[index + 1];
+      if (secretValue === "=" || secretValue === ":" || secretValue.length < 8) continue;
+      const label = tokens[index - 1];
+      if (label === "=" || label === ":") continue;
+      const previous = index > 1 && tokens[index - 2] !== "=" && tokens[index - 2] !== ":"
+        ? `${tokens[index - 2]}_${label}`
+        : "";
+      if (isSecretLabel(label) || (previous && isSecretLabel(previous))) return true;
+    }
+  }
+  return false;
+}
+
+function isSecretLabel(value) {
+  const components = value.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  if (components.some((component) => SECRET_LABEL_COMPONENTS.has(component))) return true;
+  return components.some((component, index) =>
+    component === "key" && ["api", "access", "private"].includes(components[index - 1]));
+}
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
@@ -105,7 +147,7 @@ export function parseRoadCommand(text) {
     };
   }
 
-  if (SECRET_MATERIAL.some((pattern) => pattern.test(target))) {
+  if (SECRET_MATERIAL.some((pattern) => pattern.test(target)) || containsSecretAssignment(target)) {
     return {
       accepted: false,
       state: "BLOCKED_SECRET_MATERIAL",
