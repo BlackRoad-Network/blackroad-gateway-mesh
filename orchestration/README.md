@@ -78,8 +78,9 @@ const outcome = intake.handle({
 
 The host must cap the HTTP stream while reading it (64 KiB by default), preserve
 the exact bytes, and supply its app ID and signing secret through private
-configuration. This module reads no environment variables, opens no listener,
-and sends no response or provider request. `outcome.acknowledgement` contains the
+configuration. The HTTP server below supplies the streaming and acknowledgment
+implementation. The request-intake module itself reads no environment variables,
+opens no listener, and sends no response or provider request. `outcome.acknowledgement` contains the
 suggested HTTP status and plain-text response body; never send the full outcome
 back to Slack. Authenticated [URL challenges](https://docs.slack.dev/reference/events/url_verification/)
 return only the challenge and cannot become commands.
@@ -109,8 +110,70 @@ After restart, re-normalize a trusted source observation before replanning; do
 not treat a deserialized object or a boolean field as request authentication.
 
 The live inbound subscription remains unverified, and no endpoint or scheduler
-is installed by this PR. The low-level normalizer/planner remain policy utilities
+is deployed by this PR. The low-level normalizer/planner remain policy utilities
 for trusted host code; public request routes must use the signed-request handler.
+
+### HTTP endpoint and durable handoff
+
+`createSlackIngressServer` now wires the signed handler to a real Node HTTP
+endpoint at `POST /slack/events`. It returns an **unbound** server; imports and
+construction perform no network startup or filesystem writes. The host supplies
+private app configuration and an existing owned directory with mode `0700` on a
+persistent local Linux filesystem. For example, inside an explicitly started host:
+
+```js
+import { createSlackIngressServer } from './slack-http-server.mjs';
+import { SlackReferenceInbox, restoreSlackInboxEvent } from './slack-reference-inbox.mjs';
+
+const inbox = new SlackReferenceInbox({ directory: inboxDirectory });
+const server = createSlackIngressServer({ signingSecret, applicationId, inbox });
+server.listen(port, '127.0.0.1'); // Host-selected port; TLS ingress is configured separately.
+```
+
+The endpoint bounds actual streamed bytes, checks declared length, rejects
+duplicate signing headers and compressed bodies, and limits headers to 8 KiB.
+A 2.5-second deadline starts after headers arrive: incomplete bodies receive 408,
+and unfinished storage receives 503. Responses close the connection and contain
+only a short status or an authenticated URL challenge, never a command envelope.
+Wrong paths, methods, invalid signatures, challenges, and ignored events create
+no inbox record.
+
+Every accepted command, including one awaiting approval, is stored before HTTP
+200 is sent. The immutable record contains only workspace/channel IDs, the outer
+provider event ID, message/thread timestamps, content hash, canonical event URI,
+and receipt time. It contains no message body, command target, provider result,
+credential, approval, or executable plan. This is proof of recorded intake, not
+proof of completed execution.
+
+The inbox writes private temporary files, syncs them, atomically links them into
+place without overwriting an existing event key, and syncs the directory before
+acknowledgment. Concurrent redelivery retains one original record. Reusing a
+provider event ID with different content or thread binding fails closed. Missing,
+nonprivate, corrupt, or inaccessible storage returns 503. A write can finish
+after the HTTP deadline; a provider retry safely finds the existing reference.
+Process interruption may leave temporary files, which inbox readers ignore.
+Use owned local storage with hard-link and directory-sync support, not NFS or a
+shared distributed queue. Provision and preserve the inbox directory before use.
+
+For recovery, `inbox.list({ limit: 100, after })` returns `records` and an opaque
+`nextCursor`. Re-scan from the beginning on subsequent passes to discover new
+records; pagination orders keys, not receipt times. Retain the immutable records
+and let RoadOS's durable claim/completion store track processing separately.
+After an authenticated provider-native read of the original message:
+
+```js
+const event = restoreSlackInboxEvent(record, {
+  workspaceId, channelId, message // Trusted provider read-back, not caller-supplied text.
+});
+```
+
+Recovery checks the original workspace, channel, message timestamp, author,
+thread, and content hash before rebuilding a process-local normalized event.
+Missing, edited, deleted, or mismatched observations stay blocked for operator
+review. Recovered events still need current RoadOS policy, approval, and an
+exclusive durable execution claim. No dispatcher, provider reader, polling worker,
+TLS proxy, live subscription registration, or production service is activated by
+the HTTP server. The tests exercise actual loopback HTTP with synthetic requests.
 
 GitHub pull-request events are classified as `OPENED`, `READY`, `UPDATED`, `MERGED`, or `CLOSED`. Unsupported actions fail closed. Delivery IDs remain traceable while semantic keys deduplicate provider redelivery of the same PR state.
 
@@ -126,7 +189,7 @@ Keys are recorded only after the provider write is read back and verified.
 
 | Provider | Role | Current state |
 |---|---|---|
-| Slack | cockpit / discussion | outbound verified; signed request intake and command planner implemented; inbound subscription unverified |
+| Slack | cockpit / discussion | outbound verified; signed HTTP intake and reference inbox implemented; inbound subscription unverified |
 | GitHub | code + PR event source | event route enabled for this repository |
 | Tailscale | private service transport | contract defined; live tailnet state not observed in this connector session |
 | Ollama | private model worker | blocked until a node, listener, model inventory, and bounded inference are verified |

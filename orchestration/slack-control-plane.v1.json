@@ -1,6 +1,6 @@
 {
   "schema": "road-slack-orchestration-control-plane-v1",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "authority": {
     "system": "RoadOS",
     "operator": "Alexa",
@@ -43,13 +43,17 @@
     },
     "unknownVerb": "BLOCKED_UNKNOWN_COMMAND",
     "intake": {
-      "state": "SIGNED_REQUEST_HANDLER_IMPLEMENTED_INBOUND_UNVERIFIED",
+      "state": "HTTP_ENDPOINT_IMPLEMENTED_INBOUND_UNVERIFIED",
       "requestAuthentication": "SLACK_V0_HMAC_SHA256_RAW_BYTES",
       "requestFreshnessSeconds": 300,
       "requestBodyLimitBytes": 65536,
       "applicationBinding": "HOST_CONFIGURED_APP_ID",
       "workspaceBinding": "T09BC6BSEDV",
-      "listener": "HOST_REQUIRED_NOT_DEPLOYED",
+      "listener": "EXPLICIT_LOOPBACK_LISTEN_REQUIRED_NOT_DEPLOYED",
+      "httpPath": "/slack/events",
+      "handoff": "DURABLE_PROVIDER_REFERENCE_INBOX",
+      "httpAcknowledgement": "AFTER_SYNCED_REFERENCE",
+      "httpRequestDeadlineMs": 2500,
       "messageTypes": ["message-without-subtype"],
       "dedupe": "canonical-event-id",
       "threadBinding": "exact-provider-thread-ts",
