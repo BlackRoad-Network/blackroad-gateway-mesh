@@ -11,14 +11,18 @@ export const COCKPIT = Object.freeze({
 
 const VERBS = Object.freeze({
   status: "READ",
-  plan: "PLAN",
-  run: "EXECUTE",
-  verify: "VERIFY",
+  plan: "READ",
+  run: "WRITE",
+  verify: "READ",
   receipt: "READ",
-  stop: "STOP",
-  reconcile: "RECONCILE",
-  handoff: "HANDOFF"
+  stop: "ADMIN",
+  reconcile: "ADMIN",
+  handoff: "COMMUNICATE"
 });
+
+const ACTION_CLASSES = new Set([
+  "OBSERVE", "READ", "WRITE", "COMMUNICATE", "DEPLOY", "ADMIN", "SECRET", "PUBLIC_EXPOSE"
+]);
 
 const NORMALIZED_SLACK_EVENTS = new WeakSet();
 
@@ -43,7 +47,7 @@ const HIGH_RISK = Object.freeze([
   ["IDENTITY", /\b(identity|user|member|role|permission)\b/i],
   ["ACCESS_CONTROL", /\b(grant|acl|access|authorize|revoke)\b/i],
   ["MERGE", /\bmerge\b/i],
-  ["DEPLOY", /\bdeploy|release|ship\b/i],
+  ["DEPLOY", /\b(?:deploy|release|ship)\b/i],
   ["PUBLIC_EXPOSURE", /\b(public|funnel|expose|dns|route)\b/i]
 ]);
 
@@ -53,7 +57,8 @@ const SECRET_MATERIAL = Object.freeze([
   /\bxox[baprs]-[A-Za-z0-9-]{20,}\b/,
   /\btskey-[A-Za-z0-9-]{20,}\b/,
   /\bsk-[A-Za-z0-9_-]{20,}\b/,
-  /\b(?:authorization|password|passwd|secret|token)\s*[:=]\s*\S{8,}/i,
+  /\b(?:authorization|password|passwd|secret|token|api[_-]?key|access[_-]?key|client[_-]?secret|signing[_-]?secret|webhook[_-]?secret|private[_-]?key)\s*[:=]\s*\S{8,}/i,
+  /\bAKIA[A-Z0-9]{16}\b/,
   /\bBearer\s+[A-Za-z0-9._~+/=-]{16,}\b/i
 ]);
 
@@ -110,11 +115,27 @@ export function parseRoadCommand(text) {
     };
   }
 
+  let handoff = null;
+  if (verb === "handoff") {
+    const handoffMatch = /^([^\s]+)\s+([\s\S]+)$/.exec(target);
+    if (!handoffMatch || !/^(?:connector-orchestrator|agent-instance-[1-6])$/.test(handoffMatch[1])) {
+      return {
+        accepted: false,
+        state: "BLOCKED_INVALID_HANDOFF",
+        verb,
+        actionClass,
+        reason: "Handoff requires a canonical owner and an exact operation"
+      };
+    }
+    handoff = Object.freeze({ owner: handoffMatch[1], operation: clean(handoffMatch[2]) });
+  }
+
   const risk = HIGH_RISK
     .filter(([, pattern]) => pattern.test(target))
     .map(([name]) => name);
+  if (actionClass === "ADMIN" && !risk.includes("ADMIN")) risk.push("ADMIN");
 
-  const readOnly = new Set(["READ", "PLAN", "VERIFY", "RECONCILE"]).has(actionClass);
+  const readOnly = actionClass === "READ";
 
   return {
     accepted: true,
@@ -122,6 +143,7 @@ export function parseRoadCommand(text) {
     verb,
     actionClass,
     target,
+    ...(handoff ? { handoff } : {}),
     risk,
     requiresApproval: !readOnly || risk.length > 0,
     requiresStrongApproval: risk.length > 0
@@ -226,13 +248,31 @@ export function planSlackCommandIntake(event, cockpitState = {}) {
     return { state: "BLOCKED_INVALID_THREAD", shouldDispatch: false };
   }
 
-  const command = event.command;
+  let command = event.command;
+  let resolvedPlan = null;
+  if (command.verb === "run") {
+    const plans = cockpitState.resolvedPlansById;
+    const candidate = plans && typeof plans === "object" && Object.hasOwn(plans, command.target)
+      ? plans[command.target]
+      : null;
+    if (!candidate) return { state: "BLOCKED_PLAN_UNRESOLVED", shouldDispatch: false };
+    resolvedPlan = normalizeResolvedPlan(command.target, candidate);
+    if (!resolvedPlan) return { state: "BLOCKED_INVALID_PLAN", shouldDispatch: false };
+    command = {
+      ...command,
+      actionClass: resolvedPlan.actionClass,
+      risk: resolvedPlan.risk,
+      requiresApproval: resolvedPlan.actionClass !== "READ" || resolvedPlan.risk.length > 0,
+      requiresStrongApproval: resolvedPlan.risk.length > 0
+    };
+  }
   const approval = cockpitState.approval;
   const approvalMatches = approval
     && approval.approved === true
     && approval.canonicalEventId === event.canonicalEventId
     && approval.contentHash === event.contentHash
-    && approval.threadTs === event.thread;
+    && approval.threadTs === event.thread
+    && (!resolvedPlan || approval.planHash === resolvedPlan.planHash);
   const strongApprovalMatches = approvalMatches
     && approval.strength === "STRONG";
 
@@ -241,6 +281,7 @@ export function planSlackCommandIntake(event, cockpitState = {}) {
       state: "AWAITING_STRONG_AUTHORIZATION",
       shouldDispatch: false,
       approvalBoundTo: event.canonicalEventId,
+      ...(resolvedPlan ? { resolvedPlanHash: resolvedPlan.planHash } : {}),
       risk: [...command.risk]
     };
   }
@@ -250,6 +291,7 @@ export function planSlackCommandIntake(event, cockpitState = {}) {
       state: "AWAITING_AUTHORIZATION",
       shouldDispatch: false,
       approvalBoundTo: event.canonicalEventId,
+      ...(resolvedPlan ? { resolvedPlanHash: resolvedPlan.planHash } : {}),
       risk: [...command.risk]
     };
   }
@@ -261,6 +303,12 @@ export function planSlackCommandIntake(event, cockpitState = {}) {
     actionClass: command.actionClass,
     verb: command.verb,
     exactTarget: command.target,
+    ...(resolvedPlan ? {
+      resolvedPlanId: resolvedPlan.id,
+      resolvedPlanHash: resolvedPlan.planHash,
+      resourceKey: resolvedPlan.resourceKey
+    } : {}),
+    ...(command.handoff ? { handoff: command.handoff } : {}),
     operationThreadTs: event.thread,
     sourceEvent: event.canonicalEventId,
     contentHash: event.contentHash,
@@ -301,14 +349,17 @@ export function normalizeGitHubPullRequestEvent(event) {
     };
   }
 
-  const eventVersion = clean(event?.pull_request?.head?.sha)
-    || clean(event?.pull_request?.updated_at)
+  const headSha = clean(event?.pull_request?.head?.sha);
+  const updatedAt = clean(event?.pull_request?.updated_at);
+  const eventVersion = (action === "synchronize" ? headSha : updatedAt)
+    || headSha
     || `${action}:${merged ? "merged" : "unmerged"}`;
   const semanticIdempotencyKey = sha256([
     "github-pr",
     COCKPIT.githubRepository,
     number,
     classification,
+    action,
     eventVersion
   ].join(":"));
   const deliveryIdempotencyKey = sha256([
@@ -445,21 +496,63 @@ export function buildReceipt(operation) {
   const readBackVerified = operation.readBackVerified === true;
   const timeoutUnknown = operation.timeoutUnknown === true;
 
-  const state = timeoutUnknown
-    ? "TIMEOUT_UNKNOWN"
-    : providerAcknowledged && readBackVerified
-      ? "COMPLETED"
+  const outcome = readBackVerified
+    ? "SUCCEEDED"
+    : timeoutUnknown
+      ? "TIMEOUT_UNKNOWN"
       : providerAcknowledged
-        ? "WAITING_VERIFICATION"
+        ? "PARTIAL"
         : "FAILED";
+  const required = ["id", "intentId", "agentId", "connectorId", "actionClass", "resourceKey", "recordedAt"];
+  if (required.some((key) => typeof operation[key] !== "string" || !operation[key])) {
+    throw new TypeError("canonical receipt identity fields are required");
+  }
+  if (!ACTION_CLASSES.has(operation.actionClass)) throw new TypeError("invalid receipt action class");
+  if (!/^(?:connector-orchestrator|agent-instance-[1-6])$/.test(operation.agentId)) throw new TypeError("invalid receipt agent id");
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(operation.connectorId)) throw new TypeError("invalid receipt connector id");
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(operation.recordedAt) || Number.isNaN(Date.parse(operation.recordedAt))) {
+    throw new TypeError("invalid receipt timestamp");
+  }
+  for (const key of ["evidenceRefs", "validationRefs"]) {
+    if (operation[key] !== undefined && (!Array.isArray(operation[key]) || operation[key].some((value) => typeof value !== "string"))) {
+      throw new TypeError(`${key} must contain strings`);
+    }
+  }
 
-  return {
-    schema: "road-operation-receipt-v1",
-    state,
-    retryAllowed: state === "FAILED",
-    reconcileRequired: state === "TIMEOUT_UNKNOWN",
-    providerAcknowledged,
-    readBackVerified,
-    evidence: Array.isArray(operation.evidence) ? operation.evidence : []
-  };
+  return Object.freeze({
+    id: operation.id,
+    intentId: operation.intentId,
+    claimId: operation.claimId ?? null,
+    invocationId: operation.invocationId ?? null,
+    workflowId: operation.workflowId ?? null,
+    agentId: operation.agentId,
+    sessionRef: operation.sessionRef ?? null,
+    connectorId: operation.connectorId,
+    actionClass: operation.actionClass,
+    resourceKey: operation.resourceKey,
+    outcome,
+    providerRequestRef: operation.providerRequestRef ?? null,
+    decisionReceiptRef: operation.decisionReceiptRef ?? null,
+    evidenceRefs: Object.freeze(Array.isArray(operation.evidenceRefs) ? [...operation.evidenceRefs] : []),
+    validationRefs: Object.freeze(Array.isArray(operation.validationRefs) ? [...operation.validationRefs] : []),
+    errorClass: typeof operation.errorClass === "string" ? operation.errorClass : null,
+    summary: outcome === "PARTIAL" ? "provider-acknowledged-awaiting-verification" : null,
+    recordedAt: operation.recordedAt
+  });
+}
+
+function normalizeResolvedPlan(id, plan) {
+  if (!plan || typeof plan !== "object" || plan.id !== id || !ACTION_CLASSES.has(plan.actionClass)) return null;
+  const resourceKey = clean(plan.resourceKey);
+  const planHash = clean(plan.planHash);
+  if (!resourceKey || !/^sha256:[a-f0-9]{64}$/.test(planHash)) return null;
+  const suppliedRisk = Array.isArray(plan.risk) && plan.risk.every((value) => typeof value === "string")
+    ? plan.risk
+    : null;
+  if (!suppliedRisk) return null;
+  const derivedRisk = {
+    DEPLOY: "DEPLOY", ADMIN: "ADMIN", SECRET: "SECRET", PUBLIC_EXPOSE: "PUBLIC_EXPOSURE"
+  }[plan.actionClass];
+  const risk = [...new Set([...suppliedRisk, ...(derivedRisk ? [derivedRisk] : [])])].sort();
+  return Object.freeze({ id, actionClass: plan.actionClass, resourceKey, risk: Object.freeze(risk), planHash });
 }
