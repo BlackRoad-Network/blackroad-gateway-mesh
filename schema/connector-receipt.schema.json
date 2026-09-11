@@ -18,7 +18,8 @@
       "required": ["required", "automaticRetry"],
       "properties": {
         "required": {"const": true},
-        "automaticRetry": {"const": false}
+        "automaticRetry": {"const": false},
+        "jobId": {"type": "string", "format": "uuid"}
       }
     },
     "verification": {

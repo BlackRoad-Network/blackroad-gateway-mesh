@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { DurableReconciliationQueue } from '../src/reconciliation.mjs';
 import { getConnector, loadFabric } from '../src/catalog.mjs';
 import { planConnectorAction } from '../src/planner.mjs';
 import { ConnectorRuntime } from '../src/runtime.mjs';
@@ -43,6 +48,85 @@ function signedEvidence(requirements, { id, operation = 'write', input = {}, ses
     }];
   }));
 }
+
+test('configured runtime persists intent before dispatch and reconciles unknown writes after restart', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'road-runtime-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const queue = new DurableReconciliationQueue({ directory });
+  const input = { target: 'private-target', idempotencyKey: randomUUID() };
+  const contextKey = randomUUID();
+  let writes = 0;
+  const adapters = { slack: { operations: ['write'], execute: async () => {
+    const [intent] = await new DurableReconciliationQueue({ directory }).list();
+    assert.equal(intent.jobId, contextKey);
+    assert.equal(intent.inputSha256, digestInput(input));
+    writes += 1;
+    throw new Error('provider response lost');
+  }, verify: async () => ({ ok: true }) } };
+  const denied = await planConnectorAction('slack', 'write');
+  const request = { id: 'slack', operation: 'write', input, contextKey, principal: 'user:alexa', sessionId: 'session-1', dryRun: false };
+  const runtime = new ConnectorRuntime({ adapters, evidenceVerifier: trustedVerifier(), reconciliationQueue: queue });
+  const outcome = await runtime.execute({ ...request, evidence: signedEvidence(denied.requirements, request) });
+  assert.equal(outcome.receipt.status, 'unknown');
+  assert.equal(outcome.receipt.reconciliation.jobId, contextKey);
+  const restored = new DurableReconciliationQueue({ directory });
+  const [reconciled] = await restored.runDue({ adapters, resolveContext: async () => ({ id: 'slack', input }) });
+  assert.equal(reconciled.status, 'succeeded');
+  // Even fresh approval and a new in-memory verifier cannot replay the same durable context.
+  const restartedRuntime = new ConnectorRuntime({ adapters, evidenceVerifier: trustedVerifier(), reconciliationQueue: restored });
+  const replay = await restartedRuntime.execute({ ...request, evidence: signedEvidence(denied.requirements, request) });
+  assert.equal(replay.receipt.reason, 'reconciliation-reservation-failed');
+  assert.equal(writes, 1);
+});
+
+test('queue reservation failure prevents provider calls; dry runs need no queue access', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'road-runtime-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const file = join(directory, 'not-a-directory');
+  await writeFile(file, '');
+  const queue = new DurableReconciliationQueue({ directory: file });
+  const adapters = { slack: { operations: ['write'], execute: () => assert.fail('write reached provider'), verify: () => assert.fail('read-back reached provider') } };
+  const runtime = new ConnectorRuntime({ adapters, evidenceVerifier: trustedVerifier(), reconciliationQueue: queue });
+  const denied = await planConnectorAction('slack', 'write');
+  const request = { id: 'slack', operation: 'write', contextKey: randomUUID(), principal: 'user:alexa', sessionId: 'session-1' };
+  const evidence = signedEvidence(denied.requirements, request);
+  assert.equal((await runtime.execute({ ...request, evidence })).receipt.status, 'planned');
+  const blocked = await runtime.execute({ ...request, evidence, dryRun: false });
+  assert.equal(blocked.receipt.reason, 'reconciliation-reservation-failed');
+});
+
+test('post-dispatch persistence failure retains result and recoverable intent', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'road-runtime-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const queue = new DurableReconciliationQueue({ directory });
+  queue.settle = async () => { throw new Error('disk unavailable'); };
+  const result = { providerRef: 'private-provider-ref' };
+  const adapters = { slack: { operations: ['write'], execute: async () => result, verify: async () => ({ ok: true }) } };
+  const runtime = new ConnectorRuntime({ adapters, evidenceVerifier: trustedVerifier(), reconciliationQueue: queue });
+  const denied = await planConnectorAction('slack', 'write');
+  const request = { id: 'slack', operation: 'write', contextKey: randomUUID(), principal: 'user:alexa', sessionId: 'session-1', dryRun: false };
+  const outcome = await runtime.execute({ ...request, evidence: signedEvidence(denied.requirements, request) });
+  assert.equal(outcome.receipt.status, 'unknown');
+  assert.equal(outcome.receipt.reason, 'reconciliation-persistence-error');
+  assert.deepEqual(outcome.result, result);
+  assert.equal((await queue.list())[0].status, 'pending');
+});
+
+test('normal verified outcomes settle durable records without scheduling extra provider reads', async (t) => {
+  const directory = await mkdtemp(join(tmpdir(), 'road-runtime-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const queue = new DurableReconciliationQueue({ directory });
+  const denied = await planConnectorAction('slack', 'write');
+  for (const ok of [true, false]) {
+    const adapters = { slack: { operations: ['write'], execute: async () => ({}), verify: async () => ({ ok }) } };
+    const runtime = new ConnectorRuntime({ adapters, evidenceVerifier: trustedVerifier(), reconciliationQueue: queue });
+    const request = { id: 'slack', operation: 'write', contextKey: randomUUID(), principal: 'user:alexa', sessionId: 'session-1', dryRun: false };
+    const outcome = await runtime.execute({ ...request, evidence: signedEvidence(denied.requirements, request) });
+    assert.equal(outcome.receipt.status, ok ? 'succeeded' : 'failed');
+    assert.equal((await queue.list()).find((job) => job.jobId === request.contextKey).status, outcome.receipt.status);
+  }
+  assert.deepEqual(await queue.runDue({ adapters: {}, resolveContext: () => assert.fail('terminal job scheduled') }), []);
+});
 
 test('contains exactly 65 uniquely classified connectors', async () => {
   const fabric = await loadFabric();

@@ -17,6 +17,7 @@
     "./apps": "./src/apps.mjs",
     "./capabilities": "./src/capabilities.mjs",
     "./receipt-chain": "./src/receipt-chain.mjs",
+    "./reconciliation": "./src/reconciliation.mjs",
     "./mcp-adapter": "./src/mcp-adapter.mjs",
     "./resilience": "./src/resilience.mjs",
     "./router": "./src/router.mjs"

@@ -2,16 +2,20 @@ import { getConnector } from './catalog.mjs';
 import { planConnectorAction } from './planner.mjs';
 import { createReceipt, digestInput } from './receipt.mjs';
 import { AdapterRegistry } from './adapter-sdk.mjs';
+import { DurableReconciliationQueue } from './reconciliation.mjs';
 
 export class ConnectorRuntime {
   #adapters;
   #clock;
   #evidenceVerifier;
+  #reconciliationQueue;
 
-  constructor({ adapters = new Map(), clock = () => new Date().toISOString(), evidenceVerifier = null } = {}) {
+  constructor({ adapters = new Map(), clock = () => new Date().toISOString(), evidenceVerifier = null, reconciliationQueue = null } = {}) {
+    if (reconciliationQueue !== null && !(reconciliationQueue instanceof DurableReconciliationQueue)) throw new TypeError('reconciliationQueue must be a DurableReconciliationQueue');
     this.#adapters = adapters instanceof AdapterRegistry ? adapters : new AdapterRegistry(adapters);
     this.#clock = clock;
     this.#evidenceVerifier = evidenceVerifier;
+    this.#reconciliationQueue = reconciliationQueue;
   }
 
   async probe(id) {
@@ -37,7 +41,7 @@ export class ConnectorRuntime {
     }
   }
 
-  async execute({ id, operation, input = {}, evidence = {}, principal = null, sessionId = null, dryRun = true }) {
+  async execute({ id, operation, input = {}, evidence = {}, principal = null, sessionId = null, dryRun = true, contextKey = null }) {
     const timestamp = this.#clock();
     const context = { id, operation, inputSha256: digestInput(input), principal, sessionId };
     let plan = await planConnectorAction(id, operation, evidence, { verifier: this.#evidenceVerifier, context });
@@ -61,6 +65,15 @@ export class ConnectorRuntime {
       if (!plan.allowed) return { plan, receipt: createReceipt({ id, operation, status: 'blocked', reason: plan.reason, input, timestamp }) };
     }
 
+    let jobId;
+    if (operation === 'write' && this.#reconciliationQueue) {
+      try {
+        ({ jobId } = await this.#reconciliationQueue.reserve({ id, input, contextKey }));
+      } catch {
+        return { plan, receipt: createReceipt({ id, operation, status: 'blocked', reason: 'reconciliation-reservation-failed', input, timestamp }) };
+      }
+    }
+
     let result;
     let phase = 'execute';
     try {
@@ -68,6 +81,8 @@ export class ConnectorRuntime {
       if (operation === 'write') {
         phase = 'verify';
         const verification = await adapter.verify({ connector, operation, input, result });
+        phase = 'persist';
+        if (jobId) await this.#reconciliationQueue.settle(jobId, verification?.ok === true ? 'succeeded' : 'failed');
         if (verification?.ok !== true) {
           return { plan, result, receipt: createReceipt({ id, operation, status: 'failed', reason: 'read-after-write-verification-failed', input, verification: publicVerification(verification), timestamp }) };
         }
@@ -79,11 +94,15 @@ export class ConnectorRuntime {
         // A thrown call does not prove that the provider rolled back the write.
         // Keep any acknowledged result available for a later read-back. Consumed
         // approval stays consumed; only the orchestrator may reconcile the state.
+        if (jobId) {
+          // The pre-dispatch record remains recoverable if this update fails.
+          try { await this.#reconciliationQueue.settle(jobId, 'unknown'); } catch { /* Retain the durable intent. */ }
+        }
         return { plan, result, receipt: createReceipt({
           id, operation, status: 'unknown',
-          reason: phase === 'verify' ? 'read-after-write-verification-error' : 'write-outcome-unknown',
+          reason: phase === 'persist' ? 'reconciliation-persistence-error' : phase === 'verify' ? 'read-after-write-verification-error' : 'write-outcome-unknown',
           input, verification: { detail: safeError(error) },
-          reconciliation: { required: true, automaticRetry: false }, timestamp
+          reconciliation: { required: true, automaticRetry: false, ...(jobId ? { jobId } : {}) }, timestamp
         }) };
       }
       return { plan, receipt: createReceipt({ id, operation, status: 'failed', reason: 'adapter-execution-failed', input, verification: { detail: safeError(error) }, timestamp }) };

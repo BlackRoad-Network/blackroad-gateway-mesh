@@ -69,13 +69,79 @@ Any successful invocation result remains on the returned outcome for subsequent
 provider read-back; it is not copied into the receipt. Approval nonces remain
 consumed. A timeout does not cancel or roll back a provider request.
 
-The calling orchestrator must retain the unknown receipt and arrange a separate
-provider read-back using the original target/idempotency context and any returned
-provider object reference. It must append the reconciliation evidence before
-deciding whether any new write is appropriate. This runtime does not implement a
-durable reconciliation queue or schedule background provider calls. A completed
+The optional `DurableReconciliationQueue` records intent before provider dispatch
+and schedules separate read-backs. Without a queue, the calling orchestrator must
+retain unknown receipts and arrange those read-backs. A completed immediate
 read-back returning `ok: false` retains the existing failed-verification status;
 read execution errors remain failed reads.
+
+### Durable reconciliation
+
+Import `DurableReconciliationQueue` from `./src/reconciliation.mjs` (or the package's
+`/reconciliation` export). Configure it on the runtime and invoke its worker from
+your trusted service's timer:
+
+```js
+const queue = new DurableReconciliationQueue({ directory: '/var/lib/road/reconciliation' });
+const runtime = new ConnectorRuntime({ adapters, evidenceVerifier, reconciliationQueue: queue });
+
+// The host supplies a durable private contextStore and trusted write evidence.
+// Reuse this UUID when resuming the same operation; never generate a new one for a retry.
+const contextKey = crypto.randomUUID();
+await contextStore.put(contextKey, { id: 'slack', input });
+const outcome = await runtime.execute({
+  id: 'slack', operation: 'write', input, evidence, principal, sessionId,
+  contextKey, dryRun: false
+});
+if (outcome.result !== undefined) {
+  await contextStore.put(contextKey, { id: 'slack', input, result: outcome.result });
+}
+
+// Call periodically; each invocation handles at most 20 due jobs by default.
+const updates = await queue.runDue({
+  adapters,
+  resolveContext: (key) => contextStore.get(key)
+});
+for (const job of updates) {
+  if (job.receipt) receiptChain.append(job.receipt);
+}
+```
+
+The host must persist the original target/idempotency context before dispatch.
+An adapter must be able to find the write using that context if the response or
+its provider reference was lost. The worker checks the resolved connector and
+input hash before calling only `adapter.verify`; it never invokes `execute` or
+consumes approval. A missing context can retry; a mismatched context goes to
+manual review. Only literal `ok: true` confirms success. Negative responses and
+exceptions retry with exponential delay, then stop at `manual-review` without
+asserting that the write failed. Inspect `queue.list()` for all retained jobs and
+receipts, including completions whose caller exited before collecting them.
+
+Defaults: 30 seconds of initial grace for interrupted dispatch, 5 seconds per
+read-back (including context resolution), 30 seconds initial retry delay, five
+attempts, and a one-day maximum delay. Configure grace to accommodate expected
+write duration. Expired worker leases recover after process exit; late results
+cannot overwrite a newer lease or terminal outcome. Timeouts do not cancel
+in-flight provider requests, so repeated **reads** can overlap after lease expiry.
+
+Jobs use private files, atomic replacement, file/directory sync, and exclusive
+locks around short disk transactions. Run on an owned, persistent local Linux
+filesystem; this is not a distributed or network-filesystem queue. If a process
+dies during a disk transaction, its `.lock` deliberately fails closed: stop all
+queue users and establish that no owner remains before removing that lock and
+restarting. Do not remove job JSON files to retry a write. Their UUID reservations
+prevent reuse across runtime restarts, including with fresh approval. The existing
+evidence nonce cache remains process-local; this is not a global exactly-once
+guarantee, and new operation keys still require the planner's trusted evidence.
+
+Queue files contain connector IDs, opaque UUIDs, input hashes, schedule/history,
+and redacted completion receipts. Keep the context store, provider credentials,
+and receipt-chain checkpoints in host-managed storage. Unknown runtime receipts
+include `reconciliation.jobId`; queue reservation failures block dispatch and
+post-dispatch persistence failures remain unknown. A configured queue requires a
+context UUID for every actual write; dry runs do not create jobs. Importing the
+module starts no timer or provider activity. No scheduler service is deployed by
+this package.
 
 ## Adapter SDK and fleet audit
 
