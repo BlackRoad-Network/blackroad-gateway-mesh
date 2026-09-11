@@ -128,20 +128,27 @@ test("message edits, deletes, bot echoes and other event types cannot become new
 
 test("signed requests never grant write approval and ignore caller evidence inside the payload", () => {
   const data = payload("road run approved-plan-1729");
+  const resolvedPlansById = {
+    "approved-plan-1729": { id: "approved-plan-1729", actionClass: "WRITE", resourceKey: "road:plan:approved-plan-1729", planHash: `sha256:${"a".repeat(64)}`, risk: [] }
+  };
   data.approval = { approved: true, strength: "STRONG" };
   data.inboundSubscriptionVerified = true;
   const handler = intake();
-  const waiting = handler.handle(signed(data));
+  const waiting = handler.handle(signed(data), { resolvedPlansById });
   assert.equal(waiting.state, "AWAITING_AUTHORIZATION");
   const { event } = waiting;
-  const approval = { approved: true, canonicalEventId: event.canonicalEventId, contentHash: event.contentHash, threadTs: event.thread };
-  assert.equal(handler.handle(signed(data), { approval }).state, "READY_TO_DISPATCH");
-  assert.equal(handler.handle(signed(data), { approval: { ...approval, contentHash: "sha256:stale" } }).state, "AWAITING_AUTHORIZATION");
-  const changed = payload("road run deploy service");
-  assert.equal(handler.handle(signed(changed), { approval }).state, "AWAITING_STRONG_AUTHORIZATION");
-  const highRisk = handler.handle(signed(changed)).event;
-  const strong = { approved: true, strength: "STRONG", canonicalEventId: highRisk.canonicalEventId, contentHash: highRisk.contentHash, threadTs: highRisk.thread };
-  assert.equal(handler.handle(signed(changed), { approval: strong }).state, "READY_TO_DISPATCH");
+  const approval = { approved: true, canonicalEventId: event.canonicalEventId, contentHash: event.contentHash, threadTs: event.thread, planHash: waiting.plan.resolvedPlanHash };
+  assert.equal(handler.handle(signed(data), { approval, resolvedPlansById }).state, "READY_TO_DISPATCH");
+  assert.equal(handler.handle(signed(data), { approval: { ...approval, contentHash: "sha256:stale" }, resolvedPlansById }).state, "AWAITING_AUTHORIZATION");
+  const changed = payload("road run deployment-plan-1729");
+  const highRiskPlans = {
+    "deployment-plan-1729": { id: "deployment-plan-1729", actionClass: "DEPLOY", resourceKey: "road:plan:deployment-plan-1729", planHash: `sha256:${"b".repeat(64)}`, risk: [] }
+  };
+  const highRiskWaiting = handler.handle(signed(changed), { resolvedPlansById: highRiskPlans });
+  assert.equal(highRiskWaiting.state, "AWAITING_STRONG_AUTHORIZATION");
+  const highRisk = highRiskWaiting.event;
+  const strong = { approved: true, strength: "STRONG", canonicalEventId: highRisk.canonicalEventId, contentHash: highRisk.contentHash, threadTs: highRisk.thread, planHash: highRiskWaiting.plan.resolvedPlanHash };
+  assert.equal(handler.handle(signed(changed), { approval: strong, resolvedPlansById: highRiskPlans }).state, "READY_TO_DISPATCH");
 });
 
 test("signed provider redelivery remains a no-op once recorded by the host", () => {
