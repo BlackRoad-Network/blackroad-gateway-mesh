@@ -52,14 +52,16 @@ test('negative and thrown read-backs back off then stop for manual review', asyn
   await queue.settle(contextKey, 'unknown');
   let calls = 0;
   const options = worker(async () => { calls += 1; if (calls === 2) throw new Error('token=secret'); return { ok: 'true' }; });
+  assert.deepEqual(await queue.runDue(options), []);
+  time(1_010);
   let [job] = await queue.runDue(options);
-  assert.equal(job.nextAttemptAt, 1_100);
+  assert.equal(job.nextAttemptAt, 1_110);
   assert.equal(job.status, 'pending');
   assert.deepEqual(await queue.runDue(options), []);
-  time(1_100);
+  time(1_110);
   [job] = await queue.runDue(options);
-  assert.equal(job.nextAttemptAt, 1_300);
-  time(1_300);
+  assert.equal(job.nextAttemptAt, 1_310);
+  time(1_310);
   [job] = await queue.runDue(options);
   assert.equal(job.status, 'manual-review');
   assert.equal(job.receipt, null);
@@ -69,14 +71,35 @@ test('negative and thrown read-backs back off then stop for manual review', asyn
   assert.equal(calls, 3);
 });
 
+test('unknown writes retain their initial grace before a single reconciliation attempt', async (t) => {
+  const { queue, time } = await fixture(t, { graceMs: 50, maxAttempts: 1 });
+  const contextKey = randomUUID();
+  await queue.reserve({ id: 'slack', input: {}, contextKey });
+  await queue.settle(contextKey, 'unknown');
+  let calls = 0;
+  const options = worker(async () => { calls += 1; return { ok: true }; });
+  assert.deepEqual(await queue.runDue(options), []);
+  time(1_049);
+  assert.deepEqual(await queue.runDue(options), []);
+  assert.equal(calls, 0);
+  time(1_050);
+  const [job] = await queue.runDue(options);
+  assert.equal(job.status, 'succeeded');
+  assert.equal(job.attempts, 1);
+  assert.equal(calls, 1);
+});
+
 test('wrong target or input is quarantined before provider verification', async (t) => {
   const { queue, time } = await fixture(t);
+  let due = 1_010;
   for (const context of [{ id: 'github', input: {} }, { id: 'slack', input: { altered: true } }]) {
     const contextKey = randomUUID();
     await queue.reserve({ id: 'slack', input: {}, contextKey });
     await queue.settle(contextKey, 'unknown');
     const options = worker(() => assert.fail('mismatched context reached provider'));
     options.resolveContext = async () => context;
+    time(due);
+    due += 10;
     const [job] = await queue.runDue(options);
     assert.equal(job.status, 'manual-review');
     assert.equal(job.history.at(-1).event, 'context-mismatch');
