@@ -1,6 +1,6 @@
 {
   "schema": "road-slack-orchestration-control-plane-v1",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "authority": {
     "system": "RoadOS",
     "operator": "Alexa",
@@ -33,13 +33,13 @@
     "prefix": "road",
     "verbs": {
       "status": "READ",
-      "plan": "PLAN",
-      "run": "EXECUTE",
-      "verify": "VERIFY",
+      "plan": "READ",
+      "run": "WRITE",
+      "verify": "READ",
       "receipt": "READ",
-      "stop": "STOP",
-      "reconcile": "RECONCILE",
-      "handoff": "HANDOFF"
+      "stop": "ADMIN",
+      "reconcile": "ADMIN",
+      "handoff": "COMMUNICATE"
     },
     "unknownVerb": "BLOCKED_UNKNOWN_COMMAND",
     "intake": {
@@ -75,7 +75,7 @@
       "role": "code-and-event-provider",
       "binding": "road+connector://github/repository/BlackRoad-Network/blackroad-gateway-mesh",
       "state": "PR_EVENT_ROUTE_ENABLED",
-      "events": ["opened", "ready_for_review", "closed", "synchronize", "review_submitted", "comment_created"],
+      "events": ["opened", "ready_for_review", "closed", "synchronize", "reopened", "edited", "converted_to_draft"],
       "slackDestination": "road+connector://slack/channel/C0A2M4K8WLB",
       "automaticMutations": []
     },
