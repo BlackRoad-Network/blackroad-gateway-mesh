@@ -1,0 +1,18 @@
+{
+  "schema": "road-connector-routing-v1",
+  "profiles": {
+    "collaborative-work": {"authority": "equivalent-outcome", "operations": ["read", "write"], "connectors": ["slack", "github", "linear", "asana", "notion", "airtable", "google-drive", "webflow"]},
+    "email-delivery": {"authority": "equivalent-outcome", "operations": ["read", "write"], "connectors": ["gmail", "outlook-email", "resend"]},
+    "document-signature": {"authority": "equivalent-outcome", "operations": ["read", "write"], "connectors": ["docusign", "pandadoc"]},
+    "scheduling": {"authority": "equivalent-outcome", "operations": ["read", "write"], "connectors": ["calendly", "google-calendar"]},
+    "deployment": {"authority": "equivalent-outcome", "operations": ["read", "write"], "connectors": ["cloudflare", "vercel-context-bridge", "netlify-network-atlas", "railway-api", "digitalocean-codex-infinity"]},
+    "design": {"authority": "equivalent-outcome", "operations": ["read", "write"], "connectors": ["figma", "webflow", "base44"]},
+    "data-platform": {"authority": "equivalent-outcome", "operations": ["read", "write"], "connectors": ["supabase", "dataverse"]},
+    "analytics": {"authority": "equivalent-outcome", "operations": ["read"], "connectors": ["posthog", "amplitude", "semrush", "windsor-ai"]},
+    "meeting-intelligence": {"authority": "equivalent-outcome", "operations": ["read"], "connectors": ["zoom", "fireflies", "meetgeek", "granola"]},
+    "search-intelligence": {"authority": "equivalent-outcome", "operations": ["read"], "connectors": ["search", "gsc-wizard", "semrush"]},
+    "code-and-models": {"authority": "equivalent-outcome", "operations": ["read", "write"], "connectors": ["github", "hugging-face", "openai-platform", "nvidia"]},
+    "billing": {"authority": "source-of-truth", "operations": ["read", "write"], "connectors": ["stripe"]},
+    "secrets": {"authority": "reference-only", "operations": ["read"], "connectors": ["1password"]}
+  }
+}

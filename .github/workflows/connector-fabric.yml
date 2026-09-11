@@ -1,0 +1,41 @@
+name: Connector fabric
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "test/**"
+      - "data/**"
+      - "schema/**"
+      - "bin/road-connectors.mjs"
+      - "package.json"
+      - ".github/workflows/connector-fabric.yml"
+  push:
+    branches: ["codex/connector-fabric-v1.9.1"]
+    paths:
+      - "src/**"
+      - "test/**"
+      - "data/**"
+      - "schema/**"
+      - "bin/road-connectors.mjs"
+      - "package.json"
+      - ".github/workflows/connector-fabric.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Validate connector contracts
+        run: node bin/road-connectors.mjs check
+      - name: Parse JSON schema files
+        run: node --input-type=module -e 'import { readdirSync, readFileSync } from "node:fs"; for (const file of readdirSync("schema").filter(f => f.endsWith(".json"))) JSON.parse(readFileSync(`schema/${file}`, "utf8"));'
+      - name: Test connector runtime
+        run: node --test test/*.test.mjs
