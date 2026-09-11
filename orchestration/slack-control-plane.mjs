@@ -20,6 +20,12 @@ const VERBS = Object.freeze({
   handoff: "HANDOFF"
 });
 
+const NORMALIZED_SLACK_EVENTS = new WeakSet();
+
+function isSlackTimestamp(value) {
+  return typeof value === "string" && value.length <= 32 && /^[0-9]+\.[0-9]+$/.test(value) && !/\s/.test(value);
+}
+
 const GITHUB_PR_ACTIONS = Object.freeze({
   opened: "OPENED",
   ready_for_review: "READY",
@@ -73,7 +79,7 @@ export function parseRoadCommand(text) {
 
   const verb = match[1].toLowerCase();
   const target = clean(match[2]);
-  const actionClass = VERBS[verb];
+  const actionClass = Object.hasOwn(VERBS, verb) ? VERBS[verb] : null;
 
   if (!actionClass) {
     return {
@@ -131,12 +137,21 @@ export function normalizeSlackEvent(event) {
     return { accepted: false, state: "IGNORED_WRONG_CHANNEL" };
   }
 
+  if (event.team !== undefined && event.team !== COCKPIT.workspaceId) {
+    return { accepted: false, state: "IGNORED_WRONG_WORKSPACE" };
+  }
+
   if (event.user !== COCKPIT.operatorUserId) {
     return { accepted: false, state: "IGNORED_UNAUTHORIZED_AUTHOR" };
   }
 
   if (event.bot_id || event.subtype === "bot_message") {
     return { accepted: false, state: "IGNORED_SELF_ECHO" };
+  }
+
+  if (event.subtype !== undefined) return { accepted: false, state: "IGNORED_MESSAGE_SUBTYPE" };
+  if (!isSlackTimestamp(event.ts) || (event.thread_ts !== undefined && !isSlackTimestamp(event.thread_ts))) {
+    return { accepted: false, state: "BLOCKED_INVALID_THREAD" };
   }
 
   const command = parseRoadCommand(event.text);
@@ -156,22 +171,24 @@ export function normalizeSlackEvent(event) {
     contentHash
   ].join(":"));
 
-  return {
+  const normalized = Object.freeze({
     accepted: true,
     state: command.state,
     kind: "ORCHESTRATION_COMMAND",
-    command,
-    source: {
+    command: Object.freeze({ ...command, risk: Object.freeze([...command.risk]) }),
+    source: Object.freeze({
       provider: "slack",
       providerEventId,
       binding: `road+connector://slack/${COCKPIT.workspaceId}/${COCKPIT.channelId}/${clean(event.ts)}`
-    },
+    }),
     actor: "road://identity/alexa",
     thread: clean(event.thread_ts) || clean(event.ts),
     canonicalEventId: `road://event/${canonicalId}`,
     contentHash: `sha256:${contentHash}`,
     rawContentPersisted: false
-  };
+  });
+  NORMALIZED_SLACK_EVENTS.add(normalized);
+  return normalized;
 }
 
 export function planSlackCommandIntake(event, cockpitState = {}) {
@@ -179,6 +196,7 @@ export function planSlackCommandIntake(event, cockpitState = {}) {
     !event
     || event.accepted !== true
     || event.kind !== "ORCHESTRATION_COMMAND"
+    || !NORMALIZED_SLACK_EVENTS.has(event)
   ) {
     return { state: "BLOCKED_INVALID_EVENT", shouldDispatch: false };
   }
@@ -204,7 +222,7 @@ export function planSlackCommandIntake(event, cockpitState = {}) {
     };
   }
 
-  if (!/^\d+\.\d+$/.test(event.thread)) {
+  if (!isSlackTimestamp(event.thread)) {
     return { state: "BLOCKED_INVALID_THREAD", shouldDispatch: false };
   }
 

@@ -27,4 +27,4 @@ jobs:
       - name: Parse public manifest
         run: node -e 'JSON.parse(require("node:fs").readFileSync("orchestration/slack-control-plane.v1.json", "utf8"))'
       - name: Test Slack orchestration policy
-        run: node --test orchestration/slack-control-plane.test.mjs
+        run: node --test orchestration/*.test.mjs
