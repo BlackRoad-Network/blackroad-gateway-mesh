@@ -12,10 +12,29 @@ import {
   planOllamaDispatch
 } from "./slack-control-plane.mjs";
 
+const RECEIPT_BASE = Object.freeze({
+  id: "receipt-1729",
+  intentId: "intent-1729",
+  agentId: "connector-orchestrator",
+  connectorId: "slack",
+  actionClass: "COMMUNICATE",
+  resourceKey: "slack:channel:C0A2M4K8WLB",
+  recordedAt: "2026-09-11T00:00:00Z"
+});
+const receipt = (values = {}) => buildReceipt({ ...RECEIPT_BASE, ...values });
+const resolvedPlan = (id, values = {}) => ({
+  id,
+  actionClass: "WRITE",
+  resourceKey: `road:plan:${id}`,
+  planHash: `sha256:${"a".repeat(64)}`,
+  risk: [],
+  ...values
+});
+
 test("non-boolean evidence cannot complete an operation receipt", () => {
   for (const value of ["false", "true", 1, [], {}]) {
-    assert.equal(buildReceipt({ providerAcknowledged: value, readBackVerified: true }).state, "FAILED");
-    assert.equal(buildReceipt({ providerAcknowledged: true, readBackVerified: value }).state, "WAITING_VERIFICATION");
+    assert.equal(receipt({ providerAcknowledged: value, readBackVerified: true }).outcome, "SUCCEEDED");
+    assert.equal(receipt({ providerAcknowledged: true, readBackVerified: value }).outcome, "PARTIAL");
   }
 });
 
@@ -55,6 +74,40 @@ test("rejects secret-like material without returning the target", () => {
   assert.equal(result.accepted, false);
   assert.equal(result.state, "BLOCKED_SECRET_MATERIAL");
   assert.equal("target" in result, false);
+});
+
+test("rejects generic API keys and raw AWS access-key identifiers", () => {
+  for (const text of [
+    "road run api_key=private-value-1729",
+    "road run access-key=private-value-1729",
+    "road run AKIA1234567890ABCDEF"
+  ]) {
+    const result = parseRoadCommand(text);
+    assert.equal(result.state, "BLOCKED_SECRET_MATERIAL");
+    assert.equal("target" in result, false);
+  }
+});
+
+test("handoff requires and preserves both owner and operation", () => {
+  assert.equal(parseRoadCommand("road handoff agent-instance-2").state, "BLOCKED_INVALID_HANDOFF");
+  assert.equal(parseRoadCommand("road handoff unknown-agent verify connector health").state, "BLOCKED_INVALID_HANDOFF");
+  const command = parseRoadCommand("road handoff agent-instance-2 verify connector health");
+  assert.equal(command.actionClass, "COMMUNICATE");
+  assert.deepEqual(command.handoff, { owner: "agent-instance-2", operation: "verify connector health" });
+});
+
+test("administrative verbs require strong approval independent of target wording", () => {
+  for (const text of ["road stop operation-1729", "road reconcile operation-1729"]) {
+    const command = parseRoadCommand(text);
+    assert.equal(command.actionClass, "ADMIN");
+    assert.equal(command.requiresStrongApproval, true);
+    assert.ok(command.risk.includes("ADMIN"));
+  }
+});
+
+test("risk matching uses complete word boundaries", () => {
+  assert.deepEqual(parseRoadCommand("road status relationship").risk, []);
+  assert.deepEqual(parseRoadCommand("road status release candidate").risk, ["DEPLOY"]);
 });
 
 test("requires strong approval for deployment or public exposure", () => {
@@ -171,8 +224,10 @@ test("binds approval to the command hash, event, and thread", () => {
     user: COCKPIT.operatorUserId,
     text: "road run approved-plan-1729"
   });
+  const plans = { "approved-plan-1729": resolvedPlan("approved-plan-1729") };
+  const waiting = planSlackCommandIntake(event, { inboundSubscriptionVerified: true, resolvedPlansById: plans });
   const stale = planSlackCommandIntake(event, {
-    inboundSubscriptionVerified: true,
+    inboundSubscriptionVerified: true, resolvedPlansById: plans,
     approval: {
       approved: true,
       canonicalEventId: event.canonicalEventId,
@@ -181,16 +236,34 @@ test("binds approval to the command hash, event, and thread", () => {
     }
   });
   const approved = planSlackCommandIntake(event, {
-    inboundSubscriptionVerified: true,
+    inboundSubscriptionVerified: true, resolvedPlansById: plans,
     approval: {
       approved: true,
       canonicalEventId: event.canonicalEventId,
       contentHash: event.contentHash,
-      threadTs: event.thread
+      threadTs: event.thread,
+      planHash: waiting.resolvedPlanHash
     }
   });
   assert.equal(stale.state, "AWAITING_AUTHORIZATION");
   assert.equal(approved.state, "READY_TO_DISPATCH");
+});
+
+test("run commands fail closed until the referenced plan is resolved", () => {
+  const event = normalizeSlackEvent({
+    event_id: "Ev-intake-unresolved-plan",
+    ts: "1788946003.223456",
+    channel: COCKPIT.channelId,
+    user: COCKPIT.operatorUserId,
+    text: "road run approved-plan-1729"
+  });
+  assert.equal(planSlackCommandIntake(event, { inboundSubscriptionVerified: true }).state, "BLOCKED_PLAN_UNRESOLVED");
+  assert.equal(planSlackCommandIntake(event, {
+    inboundSubscriptionVerified: true,
+    resolvedPlansById: {
+      "approved-plan-1729": { ...resolvedPlan("approved-plan-1729"), planHash: "sha256:bad" }
+    }
+  }).state, "BLOCKED_INVALID_PLAN");
 });
 
 test("requires strong approval for high-risk Slack commands", () => {
@@ -199,16 +272,22 @@ test("requires strong approval for high-risk Slack commands", () => {
     ts: "1788946004.123456",
     channel: COCKPIT.channelId,
     user: COCKPIT.operatorUserId,
-    text: "road run deploy service"
+    text: "road run deployment-plan-1729"
   });
+  const resolvedPlansById = {
+    "deployment-plan-1729": resolvedPlan("deployment-plan-1729", { actionClass: "DEPLOY" })
+  };
+  const waiting = planSlackCommandIntake(event, { inboundSubscriptionVerified: true, resolvedPlansById });
   const weak = {
     inboundSubscriptionVerified: true,
+    resolvedPlansById,
     approval: {
       approved: true,
       canonicalEventId: event.canonicalEventId,
       contentHash: event.contentHash,
       threadTs: event.thread,
-      strength: "NORMAL"
+      strength: "NORMAL",
+      planHash: waiting.resolvedPlanHash
     }
   };
   assert.equal(
@@ -222,6 +301,32 @@ test("requires strong approval for high-risk Slack commands", () => {
     }).state,
     "READY_TO_DISPATCH"
   );
+});
+
+test("run dispatch uses the resolved plan action class and binds its hash", () => {
+  const event = normalizeSlackEvent({
+    event_id: "Ev-intake-resolved-plan",
+    ts: "1788946004.223456",
+    channel: COCKPIT.channelId,
+    user: COCKPIT.operatorUserId,
+    text: "road run deployment-plan-1729"
+  });
+  const resolvedPlansById = {
+    "deployment-plan-1729": resolvedPlan("deployment-plan-1729", { actionClass: "DEPLOY" })
+  };
+  const waiting = planSlackCommandIntake(event, { inboundSubscriptionVerified: true, resolvedPlansById });
+  const approval = {
+    approved: true,
+    strength: "STRONG",
+    canonicalEventId: event.canonicalEventId,
+    contentHash: event.contentHash,
+    threadTs: event.thread,
+    planHash: waiting.resolvedPlanHash
+  };
+  const plan = planSlackCommandIntake(event, { inboundSubscriptionVerified: true, resolvedPlansById, approval });
+  assert.equal(plan.state, "READY_TO_DISPATCH");
+  assert.equal(plan.actionClass, "DEPLOY");
+  assert.equal(plan.resolvedPlanHash, approval.planHash);
 });
 
 test("routes only canonical gateway pull-request events", () => {
@@ -315,6 +420,23 @@ test("deduplicates semantic redeliveries while retaining delivery identity", () 
   assert.notEqual(first.deliveryIdempotencyKey, redelivery.deliveryIdempotencyKey);
 });
 
+test("metadata-only PR actions receive distinct semantic revisions on the same head", () => {
+  const base = {
+    repository: { full_name: COCKPIT.githubRepository },
+    pull_request: { number: 15, head: { sha: "same-head" }, updated_at: "2026-09-11T00:00:00Z" }
+  };
+  const edited = normalizeGitHubPullRequestEvent({ ...base, action: "edited", delivery_id: "delivery-edit" });
+  const reopened = normalizeGitHubPullRequestEvent({ ...base, action: "reopened", delivery_id: "delivery-reopen" });
+  const laterEdit = normalizeGitHubPullRequestEvent({
+    ...base,
+    action: "edited",
+    delivery_id: "delivery-edit-later",
+    pull_request: { ...base.pull_request, updated_at: "2026-09-11T00:01:00Z" }
+  });
+  assert.notEqual(edited.semanticIdempotencyKey, reopened.semanticIdempotencyKey);
+  assert.notEqual(edited.semanticIdempotencyKey, laterEdit.semanticIdempotencyKey);
+});
+
 test("plans one parent and later events in its exact thread", () => {
   const opened = normalizeGitHubPullRequestEvent({
     action: "opened",
@@ -403,23 +525,43 @@ test("marks Ollama ready only with complete private evidence", () => {
 
 test("provider acknowledgement alone is not completion", () => {
   assert.equal(
-    buildReceipt({ providerAcknowledged: true, readBackVerified: false }).state,
-    "WAITING_VERIFICATION"
+    receipt({ providerAcknowledged: true, readBackVerified: false }).outcome,
+    "PARTIAL"
   );
   assert.equal(
-    buildReceipt({ providerAcknowledged: true, readBackVerified: true }).state,
-    "COMPLETED"
+    receipt({ providerAcknowledged: true, readBackVerified: true }).outcome,
+    "SUCCEEDED"
   );
 });
 
 test("unknown timeouts require reconciliation and cannot auto-retry", () => {
-  const receipt = buildReceipt({
+  const result = receipt({
     providerAcknowledged: false,
     readBackVerified: false,
     timeoutUnknown: true
   });
 
-  assert.equal(receipt.state, "TIMEOUT_UNKNOWN");
-  assert.equal(receipt.retryAllowed, false);
-  assert.equal(receipt.reconcileRequired, true);
+  assert.equal(result.outcome, "TIMEOUT_UNKNOWN");
+});
+
+test("verified reconciliation succeeds without fabricating provider acknowledgement", () => {
+  assert.equal(receipt({ providerAcknowledged: false, readBackVerified: true, timeoutUnknown: true }).outcome, "SUCCEEDED");
+});
+
+test("operation receipts contain only collaboration receipt contract fields", () => {
+  const result = receipt({
+    providerAcknowledged: true,
+    readBackVerified: true,
+    invocationId: "invocation-1729",
+    sessionRef: "session-1729",
+    evidenceRefs: ["evidence-1729"]
+  });
+  assert.deepEqual(Object.keys(result).sort(), [
+    "actionClass", "agentId", "claimId", "connectorId", "decisionReceiptRef", "errorClass",
+    "evidenceRefs", "id", "intentId", "invocationId", "outcome", "providerRequestRef",
+    "recordedAt", "resourceKey", "sessionRef", "summary", "validationRefs", "workflowId"
+  ].sort());
+  assert.equal(result.outcome, "SUCCEEDED");
+  assert.equal("state" in result, false);
+  assert.equal("retryAllowed" in result, false);
 });
