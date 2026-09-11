@@ -1,0 +1,26 @@
+name: Transport health
+
+on:
+  pull_request:
+    branches: [gateway-messaging-v1]
+    paths:
+      - messaging/transport-health.mjs
+      - messaging/tests/transport-health.test.mjs
+      - transport-health-v1.9-integration.patch
+      - .github/workflows/transport-health.yml
+  push:
+    branches: [codex/transport-health-hardening-v1]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test messaging/tests/transport-health.test.mjs
