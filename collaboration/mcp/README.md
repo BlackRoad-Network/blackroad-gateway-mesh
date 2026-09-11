@@ -41,5 +41,32 @@ work retain their owner. Verified prerequisites require a verification reference
 for READ and OBSERVE steps as well as mutations.
 
 The executable broker is not ready for sensitive provider execution: authoritative
-governance/approval checks at work start and recovery across state/event-log writes
-remain unresolved review findings. The checks above do not implement those gates.
+governance/approval checks at work start remain an unresolved review finding.
+The checks above do not implement those gates.
+
+## State and event-log recovery
+
+The atomic state rename is the transaction commit point. The state retains the
+latest 500 hash-chained events. The JSONL file is a recoverable projection: before
+a mutation, the store validates its full chain against state and restores any
+missing tail from retained events. An unavailable log blocks before the mutator.
+After a state commit, projection failure returns `committed: true` and
+`eventLogPending: true` from `transact`; it does not report a rollback. Broker
+methods continue to return their committed result. They do not repeat the mutation.
+
+`await store.reconcileEvents()` repairs the projection under the same lock without
+running a work transition. The next transaction also repairs it before proceeding,
+so unresolved projection failures cannot evict recovery events. Truncated or
+conflicting logs, logs ahead of state, and gaps older than the retained history
+block recovery for operator inspection; they are not silently overwritten.
+
+Temporary files are flushed before atomic replacement. Initialization and recovery
+share the transaction lock. Lock age never permits automatic takeover: after a
+process crash, stop all users of the store and establish that the owner is gone
+before removing its lock. A failed cleanup leaves further mutations blocked.
+
+This is a small local-filesystem reference store: recovery reads and rewrites the
+complete JSONL projection, so cost grows with history. It does not establish
+network-filesystem or sudden-power-loss guarantees. A process dying before a
+response still requires reading the saved state or using existing operation
+idempotency; these changes do not make arbitrary caller retries exactly once.

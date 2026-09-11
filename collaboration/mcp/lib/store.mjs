@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, open, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { mkdir, open, readFile, rename, rm } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -55,29 +55,47 @@ function emptyState() {
 }
 
 export class JsonStateStore {
-  constructor({ statePath, eventsPath, lockTimeoutMs = 10_000, staleLockMs = 30_000 } = {}) {
+  constructor({ statePath, eventsPath, lockTimeoutMs = 10_000 } = {}) {
     if (!statePath) throw new Error("statePath-required");
     this.statePath = statePath;
     this.eventsPath = eventsPath ?? join(dirname(statePath), "mcp-events.jsonl");
     this.lockPath = `${statePath}.lock`;
     this.lockTimeoutMs = lockTimeoutMs;
-    this.staleLockMs = staleLockMs;
+    if ([resolve(this.statePath), resolve(this.lockPath)].includes(resolve(this.eventsPath))) {
+      throw new Error("event-log-path-conflict");
+    }
   }
 
   async init() {
-    await mkdir(dirname(this.statePath), { recursive: true });
+    const release = await this.#acquire();
     try {
-      await stat(this.statePath);
-    } catch {
-      await this.#atomicWrite(emptyState());
+      const state = await this.read();
+      await this.#syncEvents(state);
+      await this.#atomicWrite(state);
+    } finally {
+      await release();
     }
   }
 
   async read() {
-    await this.init();
-    const raw = await readFile(this.statePath, "utf8");
-    const state = JSON.parse(raw);
-    return { ...emptyState(), ...state };
+    try {
+      const state = JSON.parse(await readFile(this.statePath, "utf8"));
+      return { ...emptyState(), ...state };
+    } catch (error) {
+      if (error.code === "ENOENT") return emptyState();
+      throw error;
+    }
+  }
+
+  async reconcileEvents() {
+    const release = await this.#acquire();
+    try {
+      const state = await this.read();
+      await this.#syncEvents(state);
+      return { generation: state.generation, eventHead: state.eventHead, eventLogPending: false };
+    } finally {
+      await release();
+    }
   }
 
   async transact({ actor, type, data = {} }, mutator) {
@@ -85,6 +103,8 @@ export class JsonStateStore {
     const release = await this.#acquire();
     try {
       const state = await this.read();
+      // Recover the previous commit before another event can evict it from state.
+      await this.#syncEvents(state);
       const result = await mutator(state);
       assertNoSecrets(state);
       state.generation = Number(state.generation ?? 0) + 1;
@@ -102,38 +122,91 @@ export class JsonStateStore {
       state.eventHead = event.hash;
       state.events = [...(state.events ?? []), event].slice(-500);
       await this.#atomicWrite(state);
-      await writeFile(this.eventsPath, `${JSON.stringify(event)}\n`, { flag: "a", mode: 0o600 });
-      return { result, state, event };
+      // The state rename is the commit point. A projection failure cannot undo it.
+      let eventLogPending = false;
+      try { await this.#syncEvents(state); } catch { eventLogPending = true; }
+      return { result, state, event, committed: true, eventLogPending };
     } finally {
       await release();
     }
   }
 
+  async #syncEvents(state) {
+    let raw = "";
+    let missing = false;
+    try { raw = await readFile(this.eventsPath, "utf8"); }
+    catch (error) {
+      if (error.code !== "ENOENT") throw error;
+      missing = true;
+    }
+    if (raw && !raw.endsWith("\n")) throw new Error("event-log-incomplete");
+    const events = raw ? raw.slice(0, -1).split("\n").map((line) => JSON.parse(line)) : [];
+    const originalLength = events.length;
+    if (!Number.isSafeInteger(state.generation) || state.generation < 0 || events.length > state.generation) {
+      throw new Error("event-log-generation-conflict");
+    }
+    // Retained events bridge only a missing tail, never a conflicting history.
+    const retained = new Map(state.events.map((event) => [event.sequence, event]));
+    for (let sequence = events.length + 1; sequence <= state.generation; sequence++) {
+      if (!retained.has(sequence)) throw new Error("event-log-recovery-gap");
+      events.push(retained.get(sequence));
+    }
+    let previousHash = null;
+    for (const [index, event] of events.entries()) {
+      const { hash, ...body } = event;
+      if (event.sequence !== index + 1 || event.previousHash !== previousHash || sha256(body) !== hash) {
+        throw new Error("event-log-chain-conflict");
+      }
+      const saved = retained.get(event.sequence);
+      if (saved && canonicalJson(saved) !== canonicalJson(event)) throw new Error("event-log-state-conflict");
+      previousHash = hash;
+    }
+    if (previousHash !== state.eventHead) throw new Error("event-log-head-conflict");
+    if (missing || originalLength !== events.length) {
+      await this.#replace(this.eventsPath, events.map((event) => JSON.stringify(event) + "\n").join(""));
+    }
+  }
+
   async #atomicWrite(state) {
-    const temp = `${this.statePath}.${process.pid}.${randomUUID()}.tmp`;
-    await writeFile(temp, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });
-    await rename(temp, this.statePath);
+    await this.#replace(this.statePath, `${JSON.stringify(state, null, 2)}\n`);
+  }
+
+  async #replace(path, content) {
+    const temp = `${path}.${process.pid}.${randomUUID()}.tmp`;
+    let handle;
+    try {
+      handle = await open(temp, "wx", 0o600);
+      await handle.writeFile(content);
+      await handle.sync();
+      await handle.close();
+      handle = null;
+      await rename(temp, path);
+    } finally {
+      await handle?.close().catch(() => {});
+      await rm(temp, { force: true }).catch(() => {});
+    }
   }
 
   async #acquire() {
+    await mkdir(dirname(this.statePath), { recursive: true });
     const deadline = Date.now() + this.lockTimeoutMs;
     while (Date.now() < deadline) {
       try {
         const handle = await open(this.lockPath, "wx", 0o600);
-        await handle.writeFile(JSON.stringify({ pid: process.pid, acquiredAt: new Date().toISOString() }));
+        try {
+          await handle.writeFile(JSON.stringify({ pid: process.pid, acquiredAt: new Date().toISOString() }));
+        } catch (error) {
+          await handle.close().catch(() => {});
+          await rm(this.lockPath, { force: true }).catch(() => {});
+          throw error;
+        }
         return async () => {
           await handle.close().catch(() => {});
-          await rm(this.lockPath, { force: true });
+          await rm(this.lockPath, { force: true }).catch(() => {});
         };
       } catch (error) {
         if (error?.code !== "EEXIST") throw error;
-        try {
-          const info = await stat(this.lockPath);
-          if (Date.now() - info.mtimeMs > this.staleLockMs) {
-            await rm(this.lockPath, { force: true });
-            continue;
-          }
-        } catch {}
+        // Age does not establish that a lock owner has stopped. Never steal it.
         await sleep(20);
       }
     }
