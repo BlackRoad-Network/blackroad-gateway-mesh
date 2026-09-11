@@ -11,8 +11,7 @@ import { ConnectorRuntime } from '../src/runtime.mjs';
 import { AdapterRegistry, defineAdapter, inspectAdapter } from '../src/adapter-sdk.mjs';
 import { auditConnectors, diffHealthSnapshots } from '../src/audit.mjs';
 import { ReceiptChain } from '../src/receipt-chain.mjs';
-import { createReceipt } from '../src/receipt.mjs';
-import { digestInput } from '../src/receipt.mjs';
+import { canonicalJson, createReceipt, digestInput } from '../src/receipt.mjs';
 import { EvidenceVerifier } from '../src/evidence.mjs';
 import { routeTask, validateRoutingProfiles } from '../src/router.mjs';
 import { createMcpAdapter } from '../src/mcp-adapter.mjs';
@@ -125,9 +124,22 @@ test('normal verified outcomes settle durable records without scheduling extra p
     const request = { id: 'slack', operation: 'write', contextKey: randomUUID(), principal: 'user:alexa', sessionId: 'session-1', dryRun: false };
     const outcome = await runtime.execute({ ...request, evidence: signedEvidence(denied.requirements, request) });
     assert.equal(outcome.receipt.status, ok ? 'succeeded' : 'failed');
-    assert.equal((await queue.list()).find((job) => job.jobId === request.contextKey).status, outcome.receipt.status);
+    const persisted = (await queue.list()).find((job) => job.jobId === request.contextKey);
+    assert.equal(persisted.status, outcome.receipt.status);
+    assert.deepEqual(persisted.receipt, outcome.receipt);
   }
   assert.deepEqual(await queue.runDue({ adapters: {}, resolveContext: () => assert.fail('terminal job scheduled') }), []);
+});
+
+test('canonical receipt hashing follows JSON toJSON semantics before sorting keys', () => {
+  const first = { when: new Date('2026-09-11T01:02:03.000Z'), nested: { z: 1, a: 2 } };
+  const reordered = { nested: { a: 2, z: 1 }, when: new Date('2026-09-11T01:02:03.000Z') };
+  const later = { when: new Date('2026-09-11T01:02:04.000Z'), nested: { a: 2, z: 1 } };
+
+  assert.equal(canonicalJson(first), canonicalJson(reordered));
+  assert.equal(digestInput(first), digestInput(reordered));
+  assert.notEqual(digestInput(first), digestInput(later));
+  assert.match(canonicalJson(first), /2026-09-11T01:02:03\.000Z/);
 });
 
 test('contains exactly 65 uniquely classified connectors', async () => {

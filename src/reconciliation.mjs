@@ -50,11 +50,14 @@ export class DurableReconciliationQueue {
     });
   }
 
-  async settle(jobId, status) {
+  async settle(jobId, status, receipt = null) {
     if (!['unknown', 'succeeded', 'failed'].includes(status)) throw new TypeError('invalid write outcome');
     return this.#transaction(jobId, (job) => {
       if (!job) throw new Error('reconciliation job missing');
       if (TERMINAL.has(job.status)) return job;
+      if (status !== 'unknown' && !validRuntimeReceipt(receipt, job, status)) {
+        throw new TypeError('matching terminal receipt required');
+      }
       const now = this.#now();
       if (status === 'unknown') {
         // Preserve the reservation's initial grace deadline. The provider call
@@ -64,6 +67,7 @@ export class DurableReconciliationQueue {
         job.status = status;
         job.nextAttemptAt = null;
         job.lease = null;
+        job.receipt = receipt;
       }
       job.history.push({ at: now, event: `runtime-${status}` });
       return job;
@@ -213,4 +217,11 @@ export class DurableReconciliationQueue {
       await unlink(lockPath);
     }
   }
+}
+
+function validRuntimeReceipt(receipt, job, status) {
+  return receipt?.schema === 'road-connector-receipt-v1' &&
+    receipt.connector === job.connector && receipt.operation === 'write' &&
+    receipt.status === status && receipt.inputSha256 === job.inputSha256 &&
+    typeof receipt.timestamp === 'string';
 }

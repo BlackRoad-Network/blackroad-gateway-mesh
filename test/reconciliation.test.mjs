@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { DurableReconciliationQueue } from '../src/reconciliation.mjs';
 import { ReceiptChain } from '../src/receipt-chain.mjs';
+import { createReceipt } from '../src/receipt.mjs';
 
 async function fixture(t, options = {}) {
   const directory = await mkdtemp(join(tmpdir(), 'road-reconciliation-'));
@@ -43,6 +44,24 @@ test('intent survives reopening, deduplicates context, and emits a linked redact
   assert.doesNotMatch(raw, /private|secret-token/);
   assert.equal((await stat(join(directory, `${contextKey}.json`))).mode & 0o777, 0o600);
   assert.deepEqual(await restored.runDue(worker()), []);
+});
+
+test('runtime settlement atomically persists the supplied terminal receipt', async (t) => {
+  const { queue, reopen } = await fixture(t);
+  const contextKey = randomUUID();
+  const input = { text: 'private message', token: 'secret-token' };
+  await queue.reserve({ id: 'slack', input, contextKey });
+  const receipt = createReceipt({
+    id: 'slack', operation: 'write', status: 'failed',
+    reason: 'read-after-write-verification-failed', input,
+    verification: { ok: false, detail: null }, timestamp: '2026-09-11T01:02:03.000Z'
+  });
+
+  await queue.settle(contextKey, 'failed', receipt);
+  const [persisted] = await reopen().list();
+  assert.equal(persisted.status, 'failed');
+  assert.deepEqual(persisted.receipt, receipt);
+  assert.doesNotMatch(JSON.stringify(persisted), /private message|secret-token/);
 });
 
 test('negative and thrown read-backs back off then stop for manual review', async (t) => {

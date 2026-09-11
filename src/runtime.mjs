@@ -81,12 +81,15 @@ export class ConnectorRuntime {
       if (operation === 'write') {
         phase = 'verify';
         const verification = await adapter.verify({ connector, operation, input, result });
+        const succeeded = verification?.ok === true;
+        const receipt = createReceipt({
+          id, operation, status: succeeded ? 'succeeded' : 'failed',
+          ...(succeeded ? {} : { reason: 'read-after-write-verification-failed' }),
+          input, verification: publicVerification(verification), timestamp
+        });
         phase = 'persist';
-        if (jobId) await this.#reconciliationQueue.settle(jobId, verification?.ok === true ? 'succeeded' : 'failed');
-        if (verification?.ok !== true) {
-          return { plan, result, receipt: createReceipt({ id, operation, status: 'failed', reason: 'read-after-write-verification-failed', input, verification: publicVerification(verification), timestamp }) };
-        }
-        return { plan, result, receipt: createReceipt({ id, operation, status: 'succeeded', input, verification: publicVerification(verification), timestamp }) };
+        if (jobId) await this.#reconciliationQueue.settle(jobId, receipt.status, receipt);
+        return { plan, result, receipt };
       }
       return { plan, result, receipt: createReceipt({ id, operation, status: 'succeeded', input, timestamp }) };
     } catch (error) {

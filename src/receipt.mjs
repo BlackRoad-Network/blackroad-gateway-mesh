@@ -19,11 +19,15 @@ export function createReceipt({ id, operation, status, reason = null, input = {}
 }
 
 export function canonicalJson(value) {
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
-  if (value && typeof value === 'object') {
-    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`;
-  }
   const encoded = JSON.stringify(value);
   if (encoded === undefined) throw new TypeError('receipt values must be JSON-serializable');
-  return encoded;
+  return encodeCanonical(JSON.parse(encoded));
+}
+
+function encodeCanonical(value) {
+  if (Array.isArray(value)) return `[${value.map(encodeCanonical).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${encodeCanonical(value[key])}`).join(',')}}`;
+  }
+  return JSON.stringify(value);
 }
