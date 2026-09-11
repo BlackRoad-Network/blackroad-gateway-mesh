@@ -57,7 +57,9 @@ export class DurableReconciliationQueue {
       if (TERMINAL.has(job.status)) return job;
       const now = this.#now();
       if (status === 'unknown') {
-        if (job.status === 'pending') job.nextAttemptAt = now;
+        // Preserve the reservation's initial grace deadline. The provider call
+        // may still be completing and the host may not have published the
+        // context/result needed for an honest read-back yet.
       } else {
         job.status = status;
         job.nextAttemptAt = null;
