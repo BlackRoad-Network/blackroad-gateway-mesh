@@ -31,13 +31,14 @@
    journals
    providers
    policy
-+  health-probe --kind rnode|tailscale|ping|tcp|dns|http|netlify [--target HOST] [--port N] [--url URL] [--timeout-ms N]
++  health-probe --kind rnode|tailscale|ping|tcp|dns|http|netlify [--target HOST] [--serial-device PATH] [--port N] [--url URL] [--timeout-ms N]
 +  health-matrix [--tailscale-target HOST] [--ping-target HOST] [--tcp-target HOST --tcp-port N] [--netlify-url URL]
-@@ -236,6 +239,29 @@
+@@ -236,6 +239,30 @@
 +  if (command === 'health-probe') {
 +    print(await probeTransport({
 +      kind: required(flags, 'kind'),
 +      target: flags.target ?? null,
++      serialDevice: flags['serial-device'] ?? null,
 +      port: flags.port ? Number(flags.port) : undefined,
 +      url: flags.url ?? null,
 +      timeoutMs: flags['timeout-ms'] ? Number(flags['timeout-ms']) : undefined,
@@ -69,7 +70,7 @@
 -  version: '1.8.0',
 +  version: '1.9.0',
  };
-@@ -378,6 +379,34 @@
+@@ -378,6 +379,35 @@
 +  {
 +    name: 'road_messaging_health_probe',
 +    description: 'Run one read-only transport or edge health probe. RNode and Tailscale probes execute only on the host running this MCP server.',
@@ -78,6 +79,7 @@
 +      properties: {
 +        kind: { enum: ['rnode','tailscale','ping','tcp','dns','http','netlify'] },
 +        target: { type: ['string','null'] },
++        serialDevice: { type: ['string','null'] },
 +        port: { type: ['integer','null'], minimum: 1, maximum: 65535 },
 +        url: { type: ['string','null'] },
 +        timeoutMs: { type: ['integer','null'], minimum: 100, maximum: 30000 }
@@ -98,7 +100,7 @@
 +      }, additionalProperties: false,
 +    },
 +  },
-@@ -510,6 +539,8 @@
+@@ -510,6 +540,8 @@
 +  if (name === 'road_messaging_health_probe') return probeTransport(args);
 +  if (name === 'road_messaging_health_matrix') return healthMatrix(args);
 --- a/messaging/tests/mcp.test.mjs
