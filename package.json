@@ -1,7 +1,12 @@
 {
   "name": "blackroad-plugin-gateway",
   "private": true,
-  "dependencies": {
-    "@netlify/edge-functions": "latest"
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "start": "node local/server.mjs",
+    "test": "node --test local/*.test.mjs messaging/*.test.mjs"
   }
 }

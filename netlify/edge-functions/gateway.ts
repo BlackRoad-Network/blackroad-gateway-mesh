@@ -1,5 +1,3 @@
-import type { Config, Context } from "@netlify/edge-functions";
-
 type GatewayClass =
   | "network"
   | "hosting"
@@ -90,7 +88,11 @@ const services: ServiceSpec[] = [
 ];
 
 function env(name: string): string | null {
-  return Netlify.env.get(name) ?? null;
+  const runtime = globalThis as typeof globalThis & {
+    Netlify?: { env: { get(name: string): string | undefined } };
+    process?: { env: Record<string, string | undefined> };
+  };
+  return runtime.Netlify?.env.get(name) ?? runtime.process?.env[name] ?? null;
 }
 
 function normalizedStatus(status: string | null) {
@@ -141,7 +143,7 @@ function json(body: unknown, status = 200) {
   });
 }
 
-export default async (req: Request, _context: Context) => {
+export default async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: { "access-control-allow-origin": "*", "access-control-allow-methods": "GET,HEAD,OPTIONS" } });
   if (!new Set(["GET", "HEAD"]).has(req.method)) return json({ error: "method_not_allowed" }, 405);
 
@@ -187,7 +189,7 @@ export default async (req: Request, _context: Context) => {
   return json(body);
 };
 
-export const config: Config = {
+export const config = {
   path: ["/gateway", "/gateway/*"],
   method: ["GET", "HEAD", "OPTIONS"],
 };
