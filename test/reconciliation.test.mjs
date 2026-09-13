@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { DurableReconciliationQueue } from '../src/reconciliation.mjs';
 import { ReceiptChain } from '../src/receipt-chain.mjs';
-import { createReceipt } from '../src/receipt.mjs';
+import { createReceipt, digestInput } from '../src/receipt.mjs';
 
 async function fixture(t, options = {}) {
   const directory = await mkdtemp(join(tmpdir(), 'road-reconciliation-'));
@@ -229,4 +229,40 @@ test('worker honors batch limits and validates settings before invoking provider
   assert.equal((await queue.runDue(worker())).length, 1);
   await assert.rejects(queue.runDue({ ...worker(), limit: 0 }), /limit/);
   assert.throws(() => new DurableReconciliationQueue({ directory, timeoutMs: 0 }), /durations/);
+});
+
+
+test('reservation binds the input supplied before asynchronous disk work', async (t) => {
+  const { queue } = await fixture(t);
+  const input = { text: 'approved message' };
+  const approvedHash = digestInput(input);
+  const pending = queue.reserve({ id: 'slack', input, contextKey: randomUUID() });
+  input.text = 'changed while reserving';
+  const job = await pending;
+  assert.equal(job.inputSha256, approvedHash);
+});
+
+test('recovery verifies the same JSON snapshot whose hash matched the reservation', async (t) => {
+  const { queue, time } = await fixture(t);
+  const original = { text: 'approved message' };
+  await queue.reserve({ id: 'slack', input: original, contextKey: randomUUID() });
+  time(1_010);
+  const input = {
+    text: original.text,
+    toJSON() {
+      const snapshot = { text: this.text };
+      queueMicrotask(() => { this.text = 'changed after hash validation'; });
+      return snapshot;
+    }
+  };
+  let verifiedInput;
+  const options = worker(async ({ input: value }) => {
+    verifiedInput = value;
+    return { ok: value.text === original.text };
+  }, input);
+  const [job] = await queue.runDue(options);
+  assert.equal(job.status, 'succeeded');
+  assert.deepEqual(verifiedInput, original);
+  assert.equal(Object.isFrozen(verifiedInput), true);
+  assert.equal(job.receipt.inputSha256, digestInput(verifiedInput));
 });

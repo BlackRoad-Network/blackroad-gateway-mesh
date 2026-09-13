@@ -3,7 +3,7 @@ import { resolve, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { AdapterRegistry } from './adapter-sdk.mjs';
 import { getConnector } from './catalog.mjs';
-import { digestInput } from './receipt.mjs';
+import { digestInput, snapshotJson } from './receipt.mjs';
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 const TERMINAL = new Set(['succeeded', 'failed', 'manual-review']);
@@ -37,12 +37,13 @@ export class DurableReconciliationQueue {
   async reserve({ id, input, contextKey }) {
     if (!UUID.test(contextKey ?? '')) throw new TypeError('contextKey must be an opaque lowercase UUID');
     if (!/^[a-z0-9][a-z0-9-]*$/.test(id ?? '')) throw new TypeError('canonical connector id required');
+    const inputSha256 = digestInput(input);
     return this.#transaction(contextKey, (existing) => {
       if (existing) throw new Error('reconciliation context already reserved');
       const now = this.#now();
       return {
         schema: 'road-reconciliation-job-v1', jobId: contextKey, connector: id,
-        inputSha256: digestInput(input), status: 'pending', attempts: 0,
+        inputSha256, status: 'pending', attempts: 0,
         maxAttempts: this.#maxAttempts, retryMs: this.#retryMs,
         nextAttemptAt: now + this.#graceMs, lease: null,
         history: [{ at: now, event: 'reserved-before-dispatch' }], receipt: null
@@ -126,7 +127,10 @@ export class DurableReconciliationQueue {
             const context = await resolveContext(job.jobId);
             if (!active) throw new Error('read-back expired');
             if (!context) throw new Error('context unavailable');
-            if (context.id !== job.connector || digestInput(context.input) !== job.inputSha256) {
+            // Retain the exact JSON input checked here across catalog I/O and
+            // asynchronous provider verification. The host may reuse its object.
+            const input = snapshotJson(context.input);
+            if (context.id !== job.connector || digestInput(input) !== job.inputSha256) {
               permanent = true;
               throw new Error('context mismatch');
             }
@@ -134,7 +138,7 @@ export class DurableReconciliationQueue {
             if (!active) throw new Error('read-back expired');
             const adapter = connector && registry.resolve(job.connector, connector.observedVia);
             if (typeof adapter?.verify !== 'function') throw new Error('verification unavailable');
-            return adapter.verify({ connector, operation: 'write', input: context.input, result: context.result });
+            return adapter.verify({ connector, operation: 'write', input, result: context.result });
           })(),
           new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('read-back timeout')), this.#timeoutMs); })
         ]);
