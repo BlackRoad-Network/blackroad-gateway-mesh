@@ -39,3 +39,9 @@ Proprietary — BlackRoad OS, Inc. All rights reserved.
 ---
 *BlackRoad OS — Remember the Road. Pave Tomorrow.*
 
+# Local operation without Netlify
+
+Run `node local/server.mjs` from this directory with Node 22.18+ or Node 24+.
+The gateway listens on `http://127.0.0.1:1729` with no npm install or cloud account.
+See [local runtime and validation](local/README.md) for scope and tests.
+

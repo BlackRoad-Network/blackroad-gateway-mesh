@@ -1,4 +1,3 @@
-import type { Config, Context } from "@netlify/edge-functions";
 import contracts from "../../messaging/contracts.json" with { type: "json" };
 
 function json(body: unknown, status = 200): Response {
@@ -13,7 +12,7 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
-export default async (request: Request, _context: Context): Promise<Response> => {
+export default async (request: Request): Promise<Response> => {
   if (!new Set(["GET", "HEAD"]).has(request.method)) {
     return json({ error: "method_not_allowed" }, 405);
   }
@@ -61,7 +60,7 @@ export default async (request: Request, _context: Context): Promise<Response> =>
   return json(body);
 };
 
-export const config: Config = {
+export const config = {
   path: ["/gateway/messaging", "/gateway/messaging/*"],
   method: ["GET", "HEAD"],
 };
