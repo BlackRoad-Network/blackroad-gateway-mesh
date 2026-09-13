@@ -1,7 +1,36 @@
 {
   "name": "blackroad-plugin-gateway",
+  "version": "1.10.0",
   "private": true,
+  "type": "module",
+  "bin": {
+    "road-connectors": "./bin/road-connectors.mjs"
+  },
+  "exports": {
+    ".": "./src/runtime.mjs",
+    "./adapter-sdk": "./src/adapter-sdk.mjs",
+    "./audit": "./src/audit.mjs",
+    "./catalog": "./src/catalog.mjs",
+    "./planner": "./src/planner.mjs",
+    "./evidence": "./src/evidence.mjs",
+    "./native": "./src/native.mjs",
+    "./apps": "./src/apps.mjs",
+    "./capabilities": "./src/capabilities.mjs",
+    "./receipt-chain": "./src/receipt-chain.mjs",
+    "./reconciliation": "./src/reconciliation.mjs",
+    "./mcp-adapter": "./src/mcp-adapter.mjs",
+    "./resilience": "./src/resilience.mjs",
+    "./router": "./src/router.mjs"
+  },
+  "scripts": {
+    "check": "node bin/road-connectors.mjs check",
+    "test": "node --test test/*.test.mjs",
+    "verify": "npm run check && npm test"
+  },
   "dependencies": {
     "@netlify/edge-functions": "latest"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blackroad.io/schema/app-surface-registry.schema.json",
+  "title": "RoadOS App Surface Registry",
+  "type": "object",
+  "required": ["schema", "version", "observedAt", "source", "availabilityIsAuthentication", "apps"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {"const": "roados-app-surface-registry-v1"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "observedAt": {"type": "string", "format": "date-time"},
+    "source": {"type": "string", "minLength": 1},
+    "availabilityIsAuthentication": {"const": false},
+    "apps": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"pattern": "^[a-z0-9][a-z0-9-]*$"},
+      "additionalProperties": {
+        "type": "object",
+        "required": ["label", "capability"],
+        "additionalProperties": false,
+        "properties": {
+          "label": {"type": "string", "minLength": 1},
+          "capability": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blackroad.io/schemas/connector-fabric.schema.json",
+  "title": "BlackRoad Connector Fabric",
+  "type": "object",
+  "required": ["schema", "version", "checkedAt", "total", "roles", "providerAliases", "observations", "invariants"],
+  "properties": {
+    "schema": {"const": "road-connector-fabric-v2"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "checkedAt": {"type": "string", "format": "date-time"},
+    "total": {"type": "integer", "minimum": 1},
+    "roles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["discussion", "delivery", "event", "control", "decision", "reference-only"],
+      "properties": {
+        "discussion": {"$ref": "#/$defs/connectorIds"},
+        "delivery": {"$ref": "#/$defs/connectorIds"},
+        "event": {"$ref": "#/$defs/connectorIds"},
+        "control": {"$ref": "#/$defs/connectorIds"},
+        "decision": {"$ref": "#/$defs/connectorIds"},
+        "reference-only": {"$ref": "#/$defs/connectorIds"}
+      }
+    },
+    "providerAliases": {
+      "type": "object",
+      "additionalProperties": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"}
+    },
+    "observations": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/observation"}
+    },
+    "invariants": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "connectorIds": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+      "uniqueItems": true
+    },
+    "observation": {
+      "type": "object",
+      "required": ["state", "detail"],
+      "additionalProperties": false,
+      "properties": {
+        "state": {"enum": ["ready", "ready-empty", "limited", "broken", "unverified", "unavailable", "policy-only"]},
+        "detail": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

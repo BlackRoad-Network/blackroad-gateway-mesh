@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blackroad.io/schemas/connector-routing.schema.json",
+  "title": "BlackRoad Connector Routing Profiles",
+  "type": "object",
+  "required": ["schema", "profiles"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {"const": "road-connector-routing-v1"},
+    "profiles": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["authority", "operations", "connectors"],
+        "additionalProperties": false,
+        "properties": {
+          "authority": {"enum": ["equivalent-outcome", "source-of-truth", "reference-only"]},
+          "operations": {"type": "array", "items": {"enum": ["read", "write"]}, "uniqueItems": true, "minItems": 1},
+          "connectors": {"type": "array", "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"}, "uniqueItems": true, "minItems": 1}
+        }
+      }
+    }
+  }
+}

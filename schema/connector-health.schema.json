@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blackroad.io/schemas/connector-health.schema.json",
+  "title": "BlackRoad Connector Health Snapshot",
+  "type": "object",
+  "required": ["schema", "checkedAt", "total", "healthy", "states", "results"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {"const": "road-connector-health-v1"},
+    "checkedAt": {"type": "string", "format": "date-time"},
+    "total": {"type": "integer", "minimum": 0},
+    "healthy": {"type": "integer", "minimum": 0},
+    "states": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "reachable", "state"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string"},
+          "reachable": {"type": "boolean"},
+          "state": {"type": "string"},
+          "source": {"type": "string"},
+          "reason": {"type": "string"},
+          "detail": {"type": ["string", "null"]}
+        }
+      }
+    }
+  }
+}

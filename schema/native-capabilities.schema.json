@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blackroad.io/schema/native-capabilities.schema.json",
+  "title": "RoadOS Native Capability Registry",
+  "type": "object",
+  "required": ["schema", "version", "surfaces", "capabilities", "bridges", "exitGate", "invariants"],
+  "properties": {
+    "schema": {"const": "roados-native-capabilities-v1"},
+    "version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "surfaces": {
+      "type": "object",
+      "required": ["search", "chat", "code", "work", "play", "design", "integrate", "collaborate"],
+      "additionalProperties": false,
+      "properties": {
+        "search": {"$ref": "#/$defs/idList"},
+        "chat": {"$ref": "#/$defs/idList"},
+        "code": {"$ref": "#/$defs/idList"},
+        "work": {"$ref": "#/$defs/idList"},
+        "play": {"$ref": "#/$defs/idList"},
+        "design": {"$ref": "#/$defs/idList"},
+        "integrate": {"$ref": "#/$defs/idList"},
+        "collaborate": {"$ref": "#/$defs/idList"}
+      }
+    },
+    "capabilities": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"$ref": "#/$defs/capability"}
+    },
+    "bridges": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"type": "string", "pattern": "^[a-z0-9-]+$"}
+    },
+    "exitGate": {
+      "type": "object",
+      "required": ["baseRequirements", "operationRequirements"],
+      "properties": {
+        "baseRequirements": {"$ref": "#/$defs/idList"},
+        "operationRequirements": {
+          "type": "object",
+          "required": ["read", "write"],
+          "additionalProperties": false,
+          "properties": {
+            "read": {"type": "string"},
+            "write": {"type": "string"}
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "invariants": {"$ref": "#/$defs/idList"}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "idList": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z0-9-]+$"}
+    },
+    "capability": {
+      "type": "object",
+      "required": ["surface", "label", "operations", "state"],
+      "additionalProperties": false,
+      "properties": {
+        "surface": {"enum": ["search", "chat", "code", "work", "play", "design", "integrate", "collaborate"]},
+        "label": {"type": "string", "minLength": 1},
+        "operations": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"enum": ["read", "write"]}
+        },
+        "state": {"enum": ["contracted", "scaffolded", "usable", "verified", "native-preferred"]}
+      }
+    }
+  }
+}
