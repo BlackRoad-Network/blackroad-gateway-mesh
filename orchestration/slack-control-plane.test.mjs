@@ -601,3 +601,17 @@ test("operation receipt timestamps require real RFC3339 UTC calendar instants", 
   }
   assert.equal(receipt({ recordedAt: "2024-02-29T23:59:59.123Z" }).recordedAt, "2024-02-29T23:59:59.123Z");
 });
+
+test("prototype properties cannot classify GitHub pull-request actions or authorize reporting", () => {
+  for (const action of ["constructor", "__proto__"]) {
+    const event = normalizeGitHubPullRequestEvent({
+      action,
+      delivery_id: `delivery-${action}`,
+      repository: { full_name: COCKPIT.githubRepository },
+      pull_request: { number: 15 }
+    });
+    assert.equal(event.accepted, false);
+    assert.equal(event.state, "BLOCKED_UNSUPPORTED_ACTION");
+    assert.equal(planGitHubSlackDelivery(event).shouldPost, false);
+  }
+});

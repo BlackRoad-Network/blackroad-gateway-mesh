@@ -381,7 +381,7 @@ export function normalizeGitHubPullRequestEvent(event) {
   const merged = event?.pull_request?.merged === true;
   const classification = action === "closed"
     ? merged ? "MERGED" : "CLOSED"
-    : GITHUB_PR_ACTIONS[action];
+    : Object.hasOwn(GITHUB_PR_ACTIONS, action) ? GITHUB_PR_ACTIONS[action] : null;
 
   if (!classification) {
     return {
